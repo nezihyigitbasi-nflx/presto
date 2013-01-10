@@ -1,10 +1,11 @@
 package com.facebook.presto.split;
 
 import com.facebook.presto.hive.HiveClient;
+import com.facebook.presto.importer.RetryingImportClientProvider;
 import com.facebook.presto.spi.ImportClient;
-import com.google.common.collect.ImmutableList;
 import com.google.common.net.HostAndPort;
 import com.google.inject.Inject;
+import com.google.inject.Provider;
 import io.airlift.discovery.client.ServiceDescriptor;
 import io.airlift.discovery.client.ServiceSelector;
 import io.airlift.discovery.client.ServiceType;
@@ -18,11 +19,13 @@ import static com.google.common.base.Preconditions.checkArgument;
 public class ImportClientFactory
 {
     private final ServiceSelector selector;
+    private final RetryingImportClientProvider provider;
 
     @Inject
-    public ImportClientFactory(@ServiceType("hive-metastore") ServiceSelector selector)
+    public ImportClientFactory(@ServiceType("hive-metastore") ServiceSelector selector, RetryingImportClientProvider provider)
     {
         this.selector = selector;
+        this.provider = provider;
     }
 
     // TODO: includes hack to support presto installations supporting multiple hive dbs
@@ -30,16 +33,25 @@ public class ImportClientFactory
     {
         checkArgument(sourceName.startsWith("hive_"), "bad source name: %s", sourceName);
 
-        String metastoreName = sourceName.split("_", 2)[1];
+        final String metastoreName = sourceName.split("_", 2)[1];
         checkArgument(!metastoreName.isEmpty(), "bad metastore name: %s", metastoreName);
 
-        List<ServiceDescriptor> descriptors = ImmutableList.copyOf(selector.selectAllServices());
+        return provider.get(new Provider<ImportClient>() {
+            @Override
+            public ImportClient get()
+            {
+                return createClient(metastoreName);
+            }
+        });
+    }
 
+    private HiveClient createClient(String metastoreName)
+    {
         List<HostAndPort> metastores = new ArrayList<>();
-        for (ServiceDescriptor descriptor : descriptors) {
+        for (ServiceDescriptor descriptor : selector.selectAllServices()) {
             String thrift = descriptor.getProperties().get("thrift");
             String name = descriptor.getProperties().get("name");
-            if (thrift != null && metastoreName.equals(name)) {
+            if ((thrift != null) && metastoreName.equals(name)) {
                 try {
                     HostAndPort metastore = HostAndPort.fromString(thrift);
                     checkArgument(metastore.hasPort());
