@@ -49,6 +49,7 @@ import com.facebook.presto.tuple.Tuple;
 import com.facebook.presto.tuple.TupleInfo;
 import com.facebook.presto.tuple.TupleInfo.Type;
 import com.facebook.presto.tuple.TupleReadable;
+import com.facebook.presto.tuple.Tuples;
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
@@ -86,6 +87,7 @@ import java.util.zip.GZIPInputStream;
 
 import static com.facebook.presto.tuple.TupleInfo.Type.DOUBLE;
 import static com.facebook.presto.tuple.TupleInfo.Type.FIXED_INT_64;
+import static com.facebook.presto.tuple.Tuples.createTuple;
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Preconditions.checkArgument;
 import static io.airlift.testing.Assertions.assertEqualsIgnoreOrder;
@@ -741,6 +743,71 @@ public class TestQueries
             throws Exception
     {
         computeActual("select * from lineitem l join (select orderkey_1, custkey from orders) o on l.orderkey = o.orderkey_1");
+    }
+
+    @Test
+    public void testWithChaining()
+            throws Exception
+    {
+        assertQuery("" +
+                "WITH a AS (SELECT orderkey n FROM orders)\n" +
+                ", b AS (SELECT n + 1 n FROM a)\n" +
+                ", c AS (SELECT n + 1 n FROM b)\n" +
+                "SELECT n + 1 FROM c",
+                "SELECT orderkey + 3 FROM orders");
+    }
+
+    @Test
+    public void testWithSelfJoin()
+            throws Exception
+    {
+        assertQuery("" +
+                "WITH x AS (SELECT DISTINCT orderkey FROM orders ORDER BY orderkey LIMIT 10)\n" +
+                "SELECT count(*) FROM x a JOIN x b USING (orderkey)", "" +
+                "SELECT count(*)\n" +
+                "FROM (SELECT DISTINCT orderkey FROM orders LIMIT 10) a\n" +
+                "JOIN (SELECT DISTINCT orderkey FROM orders LIMIT 10) b USING (orderkey)");
+    }
+
+    @Test
+    public void testWithNestedSubqueries()
+            throws Exception
+    {
+        List<Tuple> actual = computeActual("" +
+                "WITH a AS (\n" +
+                "  WITH aa AS (SELECT 123 x FROM orders LIMIT 1)\n" +
+                "  SELECT x y FROM aa\n" +
+                "), b AS (\n" +
+                "  WITH bb AS (\n" +
+                "    WITH bbb AS (SELECT y FROM a)\n" +
+                "    SELECT bbb.* FROM bbb\n" +
+                "  )\n" +
+                "  SELECT y z FROM bb\n" +
+                ")\n" +
+                "SELECT *\n" +
+                "FROM (\n" +
+                "  WITH q AS (SELECT z w FROM b)\n" +
+                "  SELECT j.*, k.*\n" +
+                "  FROM a j\n" +
+                "  JOIN q k ON (j.y = k.w)\n" +
+                ") t");
+
+        assertEquals(actual, ImmutableList.of(createTuple(123), createTuple(123)));
+    }
+
+    @Test(expectedExceptions = SemanticException.class, expectedExceptionsMessageRegExp = "recursive queries are not supported")
+    public void testWithRecursive()
+            throws Exception
+    {
+        computeActual("WITH RECURSIVE a AS (SELECT 123 FROM dual) SELECT * FROM a");
+    }
+
+    // TODO: make column aliasing work
+    @Test(expectedExceptions = UnsupportedOperationException.class, expectedExceptionsMessageRegExp = ".* column mappings .*")
+    public void testWithColumnAliasing()
+            throws Exception
+    {
+        computeActual("WITH a (id) AS (SELECT 123 FROM dual) SELECT * FROM a");
     }
 
     @BeforeSuite

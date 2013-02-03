@@ -339,6 +339,10 @@ public class LogicalPlanner
         Relation relation = Iterables.getOnlyElement(relations); // TODO: add join support
 
         if (relation instanceof Table) {
+            Subquery subquery = analysis.getWithQueryReference((Table) relation);
+            if (subquery != null) {
+                return createQueryPlan(analysis.getAnalysis(subquery));
+            }
             return createScanNode((Table) relation, analysis);
         }
         else if (relation instanceof AliasedRelation) {

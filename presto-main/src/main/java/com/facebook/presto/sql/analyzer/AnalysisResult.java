@@ -11,6 +11,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 import javax.annotation.Nullable;
+
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +31,7 @@ public class AnalysisResult
     private final Long limit;
     private final List<AnalyzedOrdering> orderBy;
     private final IdentityHashMap<Join, List<AnalyzedJoinClause>> joinCriteria;
+    private final IdentityHashMap<Table, Subquery> withQueryReferences;
     private final boolean distinct;
     private final Query rewrittenQuery;
 
@@ -49,6 +51,7 @@ public class AnalysisResult
                 context.getTableMetadata(),
                 context.getInlineViews(),
                 context.getJoinCriteria(),
+                context.getWithQueryReferences(),
                 distinct,
                 aggregations,
                 predicate,
@@ -64,6 +67,7 @@ public class AnalysisResult
             IdentityHashMap<Relation, TableMetadata> tableMetadata,
             IdentityHashMap<Subquery, AnalysisResult> inlineViews,
             IdentityHashMap<Join, List<AnalyzedJoinClause>> joinCriteria,
+            IdentityHashMap<Table, Subquery> withQueryReferences,
             boolean distinct,
             Set<AnalyzedFunction> aggregations,
             @Nullable AnalyzedExpression predicate,
@@ -78,6 +82,7 @@ public class AnalysisResult
         Preconditions.checkNotNull(tableMetadata, "tableMetadata is null");
         Preconditions.checkNotNull(inlineViews, "inlineViews is null");
         Preconditions.checkNotNull(joinCriteria, "joinCriteria is null");
+        Preconditions.checkNotNull(withQueryReferences, "withQueryReferences is null");
         Preconditions.checkNotNull(aggregations, "aggregations is null");
         Preconditions.checkNotNull(output, "output is null");
         Preconditions.checkNotNull(groupBy, "groupBy is null");
@@ -89,6 +94,7 @@ public class AnalysisResult
         this.tableMetadata = new IdentityHashMap<>(tableMetadata);
         this.inlineViews = new IdentityHashMap<>(inlineViews);
         this.joinCriteria = new IdentityHashMap<>(joinCriteria);
+        this.withQueryReferences = withQueryReferences;
         this.distinct = distinct;
         this.aggregations = ImmutableSet.copyOf(aggregations);
         this.predicate = predicate;
@@ -138,6 +144,11 @@ public class AnalysisResult
         return joinCriteria.get(join);
     }
 
+    public Subquery getWithQueryReference(Table table)
+    {
+        return withQueryReferences.get(table);
+    }
+
     public Set<AnalyzedFunction> getAggregations()
     {
         return aggregations;
@@ -181,5 +192,24 @@ public class AnalysisResult
     public Query getRewrittenQuery()
     {
         return rewrittenQuery;
+    }
+
+    public AnalysisResult withOutput(AnalyzedOutput output)
+    {
+        return new AnalysisResult(
+                symbolAllocator,
+                tableDescriptors,
+                tableMetadata,
+                inlineViews,
+                joinCriteria,
+                withQueryReferences,
+                distinct,
+                aggregations,
+                predicate,
+                output,
+                groupBy,
+                orderBy,
+                limit,
+                rewrittenQuery);
     }
 }
