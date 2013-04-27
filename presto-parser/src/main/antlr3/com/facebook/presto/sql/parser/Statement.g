@@ -101,9 +101,9 @@ tokens {
     @Override
     public String getErrorMessage(RecognitionException e, String[] tokenNames)
     {
-        if (e.token.getType() == BACKQUOTED_IDENT) {
-            return "backquoted identifiers are not supported; use double quotes to quote identifiers";
-        }
+//        if (e.token.getType() == BACKQUOTED_IDENT) {
+//            return "backquoted identifiers are not supported; use double quotes to quote identifiers";
+//        }
         return super.getErrorMessage(e, tokenNames);
     }
 }
@@ -565,6 +565,8 @@ ident
     : IDENT
     | QUOTED_IDENT
     | nonReserved  -> IDENT[$nonReserved.text]
+//    | BAD_IDENT
+//    | BACKQUOTED_IDENT
     ;
 
 number
@@ -586,6 +588,7 @@ nonReserved
     | OVER | PARTITION | RANGE | ROWS | PRECEDING | FOLLOWING | CURRENT | ROW
     | REFRESH | MATERIALIZED | VIEW | ALIAS
     | YEAR | MONTH | DAY | HOUR | MINUTE | SECOND
+//    | DATE | TIME | TIMESTAMP
     ;
 
 SELECT: 'SELECT';
@@ -718,6 +721,10 @@ DECIMAL_VALUE
 IDENT
     : (LETTER | '_') (LETTER | DIGIT | '_' | '\@')*
     ;
+
+//BAD_IDENT
+//    : (LETTER | DIGIT | '_') (LETTER | DIGIT | '_' | '\@' | ':')*
+//    ;
 
 QUOTED_IDENT
     : '"' ( ~'"' | '""' )* '"'

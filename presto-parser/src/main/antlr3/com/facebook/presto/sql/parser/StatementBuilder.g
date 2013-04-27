@@ -268,6 +268,8 @@ identList returns [List<String> value = new ArrayList<>()]
 ident returns [String value]
     : i=IDENT        { $value = $i.text; }
     | q=QUOTED_IDENT { $value = $q.text; }
+//    | b=BACKQUOTED_IDENT { $value = $b.text; }
+//    | x=BAD_IDENT { $value = $x.text; }
     ;
 
 string returns [String value]
