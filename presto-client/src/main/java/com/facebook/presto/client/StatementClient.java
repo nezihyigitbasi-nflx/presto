@@ -3,6 +3,7 @@ package com.facebook.presto.client;
 import com.google.common.base.Charsets;
 import io.airlift.http.client.AsyncHttpClient;
 import io.airlift.http.client.FullJsonResponseHandler;
+import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.HttpStatus;
 import io.airlift.http.client.Request;
 import io.airlift.json.JsonCodec;
@@ -36,7 +37,8 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 public class StatementClient
         implements Closeable
 {
-    private final AsyncHttpClient httpClient;
+    private final HttpClient httpClient;
+    private final AsyncHttpClient asyncHttpClient;
     private final FullJsonResponseHandler<QueryResults> responseHandler;
     private final boolean debug;
     private final String query;
@@ -47,12 +49,19 @@ public class StatementClient
 
     public StatementClient(AsyncHttpClient httpClient, JsonCodec<QueryResults> queryResultsCodec, ClientSession session, String query)
     {
+        this(httpClient, httpClient, queryResultsCodec, session, query);
+    }
+
+    public StatementClient(HttpClient httpClient, AsyncHttpClient asyncHttpClient, JsonCodec<QueryResults> queryResultsCodec, ClientSession session, String query)
+    {
         checkNotNull(httpClient, "httpClient is null");
+        checkNotNull(asyncHttpClient, "asyncHttpClient is null");
         checkNotNull(queryResultsCodec, "queryResultsCodec is null");
         checkNotNull(session, "session is null");
         checkNotNull(query, "query is null");
 
         this.httpClient = httpClient;
+        this.asyncHttpClient = asyncHttpClient;
         this.responseHandler = createFullJsonResponseHandler(queryResultsCodec);
         this.debug = session.isDebug();
         this.query = query;
@@ -163,7 +172,8 @@ public class StatementClient
                         response.getStatusCode(),
                         response.getStatusMessage()));
             }
-        } while ((System.nanoTime() - start) < MINUTES.toNanos(2));
+        }
+        while ((System.nanoTime() - start) < MINUTES.toNanos(2));
 
         gone.set(true);
         throw new RuntimeException("Error fetching next", cause);
@@ -190,7 +200,7 @@ public class StatementClient
             URI uri = currentResults.get().getNextUri();
             if (uri != null) {
                 Request request = prepareDelete().setUri(uri).build();
-                httpClient.executeAsync(request, createStatusResponseHandler());
+                asyncHttpClient.executeAsync(request, createStatusResponseHandler());
             }
         }
     }

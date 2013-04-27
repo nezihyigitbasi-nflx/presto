@@ -568,6 +568,8 @@ ident
     : IDENT
     | QUOTED_IDENT
     | nonReserved  -> IDENT[$nonReserved.text]
+//    | BAD_IDENT
+//    | BACKQUOTED_IDENT
     ;
 
 number
@@ -589,6 +591,7 @@ nonReserved
     | OVER | PARTITION | RANGE | ROWS | PRECEDING | FOLLOWING | CURRENT | ROW
     | REFRESH | MATERIALIZED | VIEW | ALIAS
     | YEAR | MONTH | DAY | HOUR | MINUTE | SECOND
+//    | DATE | TIME | TIMESTAMP
     ;
 
 SELECT: 'SELECT';
@@ -725,6 +728,10 @@ IDENT
 DIGIT_IDENT
     : DIGIT (LETTER | DIGIT | '_' | '\@')+
     ;
+
+//BAD_IDENT
+//    : (LETTER | DIGIT | '_') (LETTER | DIGIT | '_' | '\@' | ':')*
+//    ;
 
 QUOTED_IDENT
     : '"' ( ~'"' | '""' )* '"'
