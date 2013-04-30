@@ -1,9 +1,18 @@
 package com.facebook.presto.argus;
 
+import com.facebook.presto.argus.peregrine.PeregrineClient;
+import com.facebook.presto.argus.peregrine.QueryId;
+import com.facebook.presto.argus.peregrine.QueryResponse;
+import com.facebook.presto.argus.peregrine.UnparsedQuery;
 import com.facebook.presto.sql.parser.ParsingException;
 import com.facebook.presto.sql.parser.StatementSplitter;
+import com.facebook.swift.prism.PrismNamespace;
+import com.facebook.swift.service.ThriftClientConfig;
 import com.google.common.base.Predicate;
 import com.google.common.collect.FluentIterable;
+import com.google.common.collect.ImmutableList;
+import com.google.common.net.HostAndPort;
+import io.airlift.units.Duration;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -13,6 +22,7 @@ import java.sql.Statement;
 import java.util.List;
 
 import static com.facebook.presto.argus.ArgusReports.Report;
+import static com.facebook.presto.argus.PeregrineUtil.peregrineResults;
 import static com.facebook.presto.sql.parser.SqlParser.createStatement;
 import static io.airlift.units.Duration.nanosSince;
 import static java.lang.String.format;
@@ -89,6 +99,39 @@ public final class Main
             throws Exception
     {
         LoggingUtil.initializeLogging(false);
+
+        ThriftClientConfig config = new ThriftClientConfig()
+                .setSocksProxy(HostAndPort.fromString("localhost:1080"))
+                .setReadTimeout(new Duration(10, SECONDS))
+                .setWriteTimeout(new Duration(10, SECONDS));
+        try (PeregrineClientFactory clientFactory = new PeregrineClientFactory(config)) {
+            PrismNamespace prismNamespace = clientFactory.lookupNamespace("default_platinum");
+            try (PeregrineClient client = clientFactory.create(prismNamespace.getPeregrineGateway())) {
+                String sql = "" +
+                        "with true as mode.exact " +
+                        "select ds, file_format, dummy, " +
+                        "t_string, t_tinyint, t_smallint, t_int, t_bigint, t_float, t_double " +
+                        "from presto_test where ds is not null";
+
+                QueryId queryId = client.submitQuery(new UnparsedQuery(
+                        "argus-test", sql, ImmutableList.<String>of(), prismNamespace.getHiveDatabaseName()));
+
+                QueryResponse response;
+                do {
+                    response = client.getResponse(queryId);
+                    System.out.println(response.getStatus());
+                }
+                while (!response.getStatus().getState().isDone());
+
+                for (List<Object> row : peregrineResults(response.getResult())) {
+                    System.out.println(row);
+                }
+            }
+        }
+
+        if (true) {
+            return;
+        }
 
         List<Report> reports = ArgusReports.loadReports();
 
