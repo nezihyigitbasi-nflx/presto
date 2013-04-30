@@ -72,13 +72,15 @@
         </dependency>
 
         <dependency>
-            <groupId>jline</groupId>
-            <artifactId>jline</artifactId>
+            <groupId>com.facebook.swift</groupId>
+            <artifactId>swift-prism</artifactId>
+            <version>0.2-SNAPSHOT</version>
         </dependency>
 
         <dependency>
-            <groupId>net.sf.opencsv</groupId>
-            <artifactId>opencsv</artifactId>
+            <groupId>com.facebook.swift</groupId>
+            <artifactId>swift-service</artifactId>
+            <version>0.4.0</version>
         </dependency>
 
         <!-- for testing -->
