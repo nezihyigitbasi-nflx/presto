@@ -65,9 +65,6 @@ public final class Main
                 System.out.printf("Progress: %s / %s / %s%n", valid, total, reports.size());
                 System.out.println("----------");
             }
-            if (total >= 5) {
-                break;
-            }
         }
 
         System.out.println("Valid: " + valid);
