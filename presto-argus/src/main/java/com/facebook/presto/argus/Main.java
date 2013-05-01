@@ -1,174 +1,94 @@
 package com.facebook.presto.argus;
 
-import com.facebook.presto.argus.peregrine.PeregrineClient;
-import com.facebook.presto.argus.peregrine.QueryId;
-import com.facebook.presto.argus.peregrine.QueryResponse;
-import com.facebook.presto.argus.peregrine.UnparsedQuery;
-import com.facebook.presto.sql.parser.ParsingException;
-import com.facebook.presto.sql.parser.StatementSplitter;
-import com.facebook.swift.prism.PrismNamespace;
-import com.facebook.swift.service.ThriftClientConfig;
 import com.google.common.base.Predicate;
+import com.google.common.collect.EnumMultiset;
 import com.google.common.collect.FluentIterable;
-import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Multiset;
 import com.google.common.net.HostAndPort;
-import io.airlift.units.Duration;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.List;
 
 import static com.facebook.presto.argus.ArgusReports.Report;
-import static com.facebook.presto.argus.PeregrineUtil.peregrineResults;
-import static com.facebook.presto.sql.parser.SqlParser.createStatement;
-import static io.airlift.units.Duration.nanosSince;
-import static java.lang.String.format;
-import static java.util.concurrent.TimeUnit.SECONDS;
+import static com.facebook.presto.argus.Validator.PeregrineState;
+import static com.facebook.presto.argus.Validator.PrestoState;
 
 public final class Main
 {
-//    private static final QueryExecutor executor = QueryExecutor.create("argus-test");
-//    URI uri = URI.create("http://10.78.138.47:8081");
-//    ClientSession session = new ClientSession(uri, "argus-test", "prism", report.getNamespace(), false);
-//    StatementClient client = executor.startQuery(session, sql);
+    public static final String TEST_USER = "argus-test";
+    public static final HostAndPort PRESTO_GATEWAY = HostAndPort.fromString("10.78.138.47:8081");
 
     private Main() {}
-
-    public static String lexQuery(String sql)
-    {
-        StatementSplitter splitter = new StatementSplitter(sql);
-        if (splitter.getCompleteStatements().size() > 1) {
-            throw new IllegalArgumentException("multiple statements", null);
-        }
-        if (splitter.getCompleteStatements().size() == 1) {
-            return splitter.getCompleteStatements().get(0);
-        }
-        return splitter.getPartialStatement();
-    }
-
-    public static boolean canParseQuery(Report report)
-    {
-        String sql = report.getCleanQuery();
-        try {
-            createStatement(lexQuery(sql));
-            return true;
-        }
-        catch (ParsingException | IllegalArgumentException e) {
-            if (Boolean.parseBoolean(System.getProperty("printParse"))) {
-                System.out.println("Report: " + report.getReportId());
-                System.out.println(e);
-                System.out.println(sql);
-                System.out.println("----------");
-            }
-            return false;
-        }
-    }
-
-    private static boolean canExecute(Report report)
-    {
-        System.out.println("Report: " + report.getReportId());
-
-        String url = format("jdbc:presto://%s/", "10.78.138.47:8081");
-        String sql = format("SELECT * FROM (%n%s%n) LIMIT 0", lexQuery(report.getCleanQuery()));
-
-        try (Connection connection = DriverManager.getConnection(url, "argus-test", null)) {
-            connection.setCatalog("prism");
-            connection.setSchema(report.getNamespace());
-            long start = System.nanoTime();
-            try (Statement statement = connection.createStatement();
-                    ResultSet ignored = statement.executeQuery(sql)) {
-                System.out.println("SUCCESS: " + nanosSince(start).convertTo(SECONDS) + "s");
-                return true;
-            }
-        }
-        catch (SQLException e) {
-            System.out.println(e);
-            System.out.println("Namespace: " + report.getNamespace());
-            System.out.println(sql);
-            return false;
-        }
-        finally {
-            System.out.println("----------");
-        }
-    }
 
     public static void main(String[] args)
             throws Exception
     {
         LoggingUtil.initializeLogging(false);
 
-        ThriftClientConfig config = new ThriftClientConfig()
-                .setSocksProxy(HostAndPort.fromString("localhost:1080"))
-                .setReadTimeout(new Duration(10, SECONDS))
-                .setWriteTimeout(new Duration(10, SECONDS));
-        try (PeregrineClientFactory clientFactory = new PeregrineClientFactory(config)) {
-            PrismNamespace prismNamespace = clientFactory.lookupNamespace("default_platinum");
-            try (PeregrineClient client = clientFactory.create(prismNamespace.getPeregrineGateway())) {
-                String sql = "" +
-                        "with true as mode.exact " +
-                        "select ds, file_format, dummy, " +
-                        "t_string, t_tinyint, t_smallint, t_int, t_bigint, t_float, t_double " +
-                        "from presto_test where ds is not null";
-
-                QueryId queryId = client.submitQuery(new UnparsedQuery(
-                        "argus-test", sql, ImmutableList.<String>of(), prismNamespace.getHiveDatabaseName()));
-
-                QueryResponse response;
-                do {
-                    response = client.getResponse(queryId);
-                    System.out.println(response.getStatus());
-                }
-                while (!response.getStatus().getState().isDone());
-
-                for (List<Object> row : peregrineResults(response.getResult())) {
-                    System.out.println(row);
-                }
-            }
-        }
-
-        if (true) {
-            return;
-        }
-
         List<Report> reports = ArgusReports.loadReports();
 
-        reports = FluentIterable.from(reports)
-                .filter(new Predicate<Report>()
-                {
-                    @Override
-                    public boolean apply(Report report)
-                    {
-                        return report.getViews() >= 10;
-                    }
-                })
-                .toList();
+        reports = FluentIterable.from(reports).filter(reportMinViews(10)).toList();
 
         int total = 0;
-        int parseable = 0;
-        int runnable = 0;
+        int valid = 0;
+        Multiset<PeregrineState> peregrineStates = EnumMultiset.create(PeregrineState.class);
+        Multiset<PrestoState> prestoStates = EnumMultiset.create(PrestoState.class);
+
         for (Report report : reports) {
             total++;
+            System.out.println("Report: " + report.getReportId());
+            System.out.println("Namespace: " + report.getNamespace());
 
-            if (!canParseQuery(report)) {
-                continue;
-            }
-            parseable++;
+            Validator validator = new Validator(TEST_USER, PRESTO_GATEWAY, report);
 
-            if (canExecute(report)) {
-                runnable++;
+            if (validator.valid()) {
+                valid++;
             }
+
+            peregrineStates.add(validator.getPeregrineState());
+            prestoStates.add(validator.getPrestoState());
+
+            System.out.println("Peregrine State: " + validator.getPeregrineState());
+            System.out.println("Presto State: " + validator.getPrestoState());
+            System.out.println("Results Match: " + validator.resultsMatch());
+
+            if (validator.getPeregrineException() != null) {
+                System.out.println("Peregrine Exception: " + validator.getPeregrineException());
+            }
+            if (validator.getPrestoException() != null) {
+                System.out.println("Presto Exception: " + validator.getPrestoException());
+                System.out.println("SQL:\n" + report.getCleanQuery());
+            }
+
+            System.out.println("----------");
 
             if ((total % 10) == 0) {
-                System.out.printf("Progress: %s / %s / %s / %s%n", runnable, parseable, total, reports.size());
+                System.out.printf("Progress: %s / %s / %s%n", valid, total, reports.size());
                 System.out.println("----------");
+            }
+            if (total >= 5) {
+                break;
             }
         }
 
-        System.out.println(" runnable: " + runnable);
-        System.out.println("parseable: " + parseable);
-        System.out.println("    total: " + total);
+        System.out.println("Valid: " + valid);
+        System.out.println("Total: " + total);
+        for (Multiset.Entry<PeregrineState> entry : peregrineStates.entrySet()) {
+            System.out.printf("Peregrine: %s: %s%n", entry.getElement(), entry.getCount());
+        }
+        for (Multiset.Entry<PrestoState> entry : prestoStates.entrySet()) {
+            System.out.printf("Presto: %s: %s%n", entry.getElement(), entry.getCount());
+        }
+    }
+
+    private static Predicate<Report> reportMinViews(final int minViews)
+    {
+        return new Predicate<Report>()
+        {
+            @Override
+            public boolean apply(Report report)
+            {
+                return report.getViews() >= minViews;
+            }
+        };
     }
 }
