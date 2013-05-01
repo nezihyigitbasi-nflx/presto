@@ -152,20 +152,22 @@ public class Validator
                 Iterator<List<Object>> peregrineIter = peregrine.iterator();
                 Iterator<List<Object>> prestoIter = presto.iterator();
                 int i = 0;
+                int n = 0;
                 while (i < peregrine.size()) {
+                    i++;
                     List<Object> peregrineRow = peregrineIter.next();
                     List<Object> prestoRow = prestoIter.next();
-                    System.out.printf("%s: %s: %s %s%n", i,
-                            peregrineRow.equals(prestoRow),
-                            peregrineRow, prestoRow);
-                    i++;
+                    if (!peregrineRow.equals(prestoRow)) {
+                        System.out.printf("%s: %s: %s %s%n", i,
+                                peregrineRow.equals(prestoRow),
+                                peregrineRow, prestoRow);
+                        n++;
+                        if (n >= 100) {
+                            break;
+                        }
+                    }
                 }
             }
-//            System.out.printf(format("Peregrine %s rows:\n    %s\nPresto %s rows:\n    %s\n",
-//                    peregrine.size(),
-//                    Joiner.on("\n    ").join(Iterables.limit(peregrine, 100)),
-//                    presto.size(),
-//                    Joiner.on("\n    ").join(Iterables.limit(presto, 100))));
         }
         return resultsMatch;
     }

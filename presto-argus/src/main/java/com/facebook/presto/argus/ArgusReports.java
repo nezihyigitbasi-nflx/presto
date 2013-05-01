@@ -7,15 +7,20 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Files;
 import io.airlift.json.JsonCodec;
+import org.joda.time.DateTime;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Strings.isNullOrEmpty;
+import static java.lang.Integer.parseInt;
+import static org.joda.time.format.ISODateTimeFormat.date;
 
 public final class ArgusReports
 {
@@ -83,6 +88,7 @@ public final class ArgusReports
         private final String query;
         private final Map<String, String> variables;
         private final long views;
+        private final String cleanQuery;
 
         public Report(long reportId, String namespace, String query, Map<String, String> variables, long views)
         {
@@ -91,6 +97,7 @@ public final class ArgusReports
             this.query = checkNotNull(query, "query is null");
             this.variables = checkNotNull(variables, "variables is null");
             this.views = views;
+            this.cleanQuery = cleanQuery(query, variables);
         }
 
         public long getReportId()
@@ -120,7 +127,7 @@ public final class ArgusReports
 
         public String getCleanQuery()
         {
-            return cleanQuery(query, variables);
+            return cleanQuery;
         }
 
         @Override
@@ -132,19 +139,32 @@ public final class ArgusReports
                     .add("query", query)
                     .add("variables", variables)
                     .add("views", views)
-                    .add("cleanQuery", getCleanQuery())
+                    .add("cleanQuery", cleanQuery)
                     .toString();
         }
 
         private static String cleanQuery(String sql, Map<String, String> variables)
         {
-            String fakeDate = "2013-04-29";
-            sql = sql.replace("<DATEID>", fakeDate);
-            sql = sql.replaceAll("<DATEID(\\+|\\-)(\\d+)>", fakeDate);
+            sql = replaceDateMacros(sql);
             sql = removePeregrineSettings(sql);
             sql = replaceVariables(sql, variables);
             sql = sql.replaceAll("\n+", "\n").trim();
             return sql;
+        }
+
+        private static String replaceDateMacros(String sql)
+        {
+            DateTime date = new DateTime().minusDays(1);
+            sql = sql.replace("<DATEID>", date().print(date));
+
+            StringBuffer sb = new StringBuffer();
+            Matcher matcher = Pattern.compile("<DATEID([+-]\\d+)>").matcher(sql);
+            while (matcher.find()) {
+                int days = parseInt(matcher.group(1));
+                matcher.appendReplacement(sb, date().print(date.plusDays(days)));
+            }
+            matcher.appendTail(sb);
+            return sb.toString();
         }
 
         private static String removePeregrineSettings(String sql)

@@ -29,4 +29,10 @@ public class PeregrineException
     {
         return code;
     }
+
+    @Override
+    public String toString()
+    {
+        return super.toString() + " (" + code + ")";
+    }
 }
