@@ -8,6 +8,9 @@ import com.facebook.swift.service.ThriftService;
 public interface PeregrineClient
         extends AutoCloseable
 {
+    @Override
+    void close();
+
     @ThriftMethod
     QueryId submitQuery(UnparsedQuery query)
             throws PeregrineException;

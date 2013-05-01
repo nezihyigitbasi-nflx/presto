@@ -24,7 +24,6 @@ import com.google.common.net.HostAndPort;
 import org.apache.thrift.TException;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -33,7 +32,7 @@ import java.util.concurrent.ExecutionException;
 import static com.facebook.swift.service.ThriftClientManager.DEFAULT_NAME;
 
 public class PeregrineClientFactory
-    implements Closeable
+        implements Closeable
 {
     private final ThriftClientManager clientManager;
     private final SmcClientProvider smcClientProvider;
@@ -95,7 +94,6 @@ public class PeregrineClientFactory
 
     @Override
     public void close()
-            throws IOException
     {
         clientManager.close();
     }

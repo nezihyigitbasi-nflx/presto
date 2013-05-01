@@ -1,6 +1,7 @@
 package com.facebook.presto.argus;
 
 import com.google.common.base.Charsets;
+import com.google.common.base.Objects;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -122,13 +123,39 @@ public final class ArgusReports
             return cleanQuery(query, variables);
         }
 
+        @Override
+        public String toString()
+        {
+            return Objects.toStringHelper(this)
+                    .add("reportId", reportId)
+                    .add("namespace", namespace)
+                    .add("query", query)
+                    .add("variables", variables)
+                    .add("views", views)
+                    .add("cleanQuery", getCleanQuery())
+                    .toString();
+        }
+
         private static String cleanQuery(String sql, Map<String, String> variables)
         {
-            String fakeDate = "2020-01-01";
+            String fakeDate = "2013-04-29";
             sql = sql.replace("<DATEID>", fakeDate);
             sql = sql.replaceAll("<DATEID(\\+|\\-)(\\d+)>", fakeDate);
+            sql = removePeregrineSettings(sql);
+            sql = replaceVariables(sql, variables);
+            sql = sql.replaceAll("\n+", "\n").trim();
+            return sql;
+        }
+
+        private static String removePeregrineSettings(String sql)
+        {
             sql = sql.replaceFirst("(?i)^WITH\\s+\\d+\\s+AS\\s+mapper.buffersize\\s+", "");
             sql = sql.replaceFirst("(?i)^WITH\\s+true\\s+AS\\s+mode.exact", "");
+            return sql;
+        }
+
+        private static String replaceVariables(String sql, Map<String, String> variables)
+        {
             for (Map.Entry<String, String> entry : variables.entrySet()) {
                 sql = sql.replace("$" + entry.getKey() + "$", entry.getValue());
             }

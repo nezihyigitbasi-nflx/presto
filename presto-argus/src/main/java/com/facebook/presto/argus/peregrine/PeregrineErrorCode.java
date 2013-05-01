@@ -32,4 +32,11 @@ public enum PeregrineErrorCode
     {
         return value;
     }
+
+    public boolean isInvalidQuery()
+    {
+        return (this == PARSING_ERROR) ||
+                (this == COMPILATION_ERROR) ||
+                (this == USER_ERROR);
+    }
 }
