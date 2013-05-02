@@ -9,6 +9,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedMultiset;
 import com.google.common.collect.Multiset;
 import com.google.common.net.HostAndPort;
+import com.google.common.util.concurrent.UncheckedTimeoutException;
 import io.airlift.units.Duration;
 
 import java.sql.Connection;
@@ -20,8 +21,8 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
-import static com.facebook.presto.argus.ArgusReports.Report;
 import static com.facebook.presto.sql.parser.SqlParser.createStatement;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -32,14 +33,16 @@ import static java.util.Collections.unmodifiableList;
 
 public class Validator
 {
+    private static final Duration TIME_LIMIT = new Duration(1, TimeUnit.MINUTES);
+
     public enum PeregrineState
     {
-        UNKNOWN, INVALID, MEMORY, FAILED, SUCCESS
+        UNKNOWN, TIMEOUT, INVALID, MEMORY, FAILED, SUCCESS
     }
 
     public enum PrestoState
     {
-        UNKNOWN, INVALID, FAILED, SUCCESS
+        UNKNOWN, TIMEOUT, INVALID, FAILED, SUCCESS
     }
 
     private final String username;
@@ -174,7 +177,7 @@ public class Validator
 
     private boolean canPeregrineExecute()
     {
-        try (PeregrineRunner runner = new PeregrineRunner()) {
+        try (PeregrineRunner runner = new PeregrineRunner(TIME_LIMIT)) {
             long start = System.nanoTime();
             peregrineResults = runner.execute(username, report.getNamespace(), report.getCleanQuery());
             peregrineState = PeregrineState.SUCCESS;
@@ -192,8 +195,11 @@ public class Validator
             else {
                 peregrineState = PeregrineState.FAILED;
             }
-            return false;
         }
+        catch (UncheckedTimeoutException e) {
+            peregrineState = PeregrineState.TIMEOUT;
+        }
+        return false;
     }
 
     private boolean canPrestoParse()
