@@ -7,13 +7,16 @@ import com.facebook.presto.argus.peregrine.QueryId;
 import com.facebook.presto.argus.peregrine.QueryIdNotFoundException;
 import com.facebook.presto.argus.peregrine.QueryResponse;
 import com.facebook.presto.argus.peregrine.QueryResult;
+import com.facebook.presto.argus.peregrine.QueryStatus;
 import com.facebook.presto.argus.peregrine.UnparsedQuery;
 import com.facebook.swift.prism.PrismNamespace;
 import com.facebook.swift.service.ThriftClientConfig;
 import com.google.common.base.Function;
 import com.google.common.base.Splitter;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.net.HostAndPort;
+import com.google.common.util.concurrent.UncheckedTimeoutException;
 import io.airlift.units.Duration;
 
 import java.io.Closeable;
@@ -21,18 +24,23 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static io.airlift.units.Duration.nanosSince;
 import static java.lang.Double.parseDouble;
 import static java.lang.Long.parseLong;
+import static java.lang.System.nanoTime;
 import static java.util.Collections.unmodifiableList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class PeregrineRunner
         implements Closeable
 {
+    private final Duration timeLimit;
     private final PeregrineClientFactory clientFactory;
 
-    public PeregrineRunner()
+    public PeregrineRunner(Duration timeLimit)
     {
+        this.timeLimit = checkNotNull(timeLimit, "timeLimit is null");
         ThriftClientConfig config = new ThriftClientConfig()
                 .setSocksProxy(HostAndPort.fromString("localhost:1080"))
                 .setReadTimeout(new Duration(10, SECONDS))
@@ -57,10 +65,21 @@ public class PeregrineRunner
                     ImmutableList.<String>of(),
                     ns.getHiveDatabaseName()));
 
+            long start = nanoTime();
             QueryResponse response;
             do {
+                if (nanosSince(start).compareTo(timeLimit) > 0) {
+                    throw new UncheckedTimeoutException();
+                }
                 try {
                     response = client.getResponse(queryId);
+                    QueryStatus status = response.getStatus();
+                    System.out.printf("Peregrine: %s: %s / %s [%s]\r",
+                            status.getState(),
+                            status.getCompletedSize(),
+                            status.getTotalSize(),
+                            status.getQueueRank());
+                    System.out.flush();
                 }
                 catch (QueryIdNotFoundException e) {
                     throw new PeregrineException("query ID not found", PeregrineErrorCode.UNKNOWN);
@@ -69,6 +88,10 @@ public class PeregrineRunner
             while (!response.getStatus().getState().isDone());
 
             return peregrineResults(response.getResult());
+        }
+        finally {
+            System.out.print(Strings.repeat(" ", 70) + '\r');
+            System.out.flush();
         }
     }
 
@@ -105,7 +128,7 @@ public class PeregrineRunner
                     @Override
                     public Object apply(String s)
                     {
-                        return s;
+                        return s.equals("null") ? null : s;
                     }
                 };
             case "bigint":
