@@ -1,8 +1,6 @@
 package com.facebook.presto.argus;
 
-import com.google.common.base.Predicate;
 import com.google.common.collect.EnumMultiset;
-import com.google.common.collect.FluentIterable;
 import com.google.common.collect.Multiset;
 import com.google.common.net.HostAndPort;
 
@@ -25,15 +23,15 @@ public class ArgusConverter
         this.logFile = logFile;
     }
 
-    public void run(List<Report> reports)
+    public void run(MigrationManager manager)
     {
-        reports = FluentIterable.from(reports).filter(reportMinViews(10)).toList();
-
         int total = 0;
         int valid = 0;
+        int migrated = 0;
         Multiset<PeregrineState> peregrineStates = EnumMultiset.create(PeregrineState.class);
         Multiset<PrestoState> prestoStates = EnumMultiset.create(PrestoState.class);
 
+        List<Report> reports = manager.getReports();
         for (Report report : reports) {
             total++;
             println("Report: " + report.getReportId());
@@ -63,10 +61,24 @@ public class ArgusConverter
                 println("SQL:\n" + report.getCleanQuery());
             }
 
+            try {
+                if (manager.migrateReport(report, validator, validator.resultsMatch())) {
+                    migrated++;
+                    println("Migrated: true");
+                }
+                else {
+                    println("Migrated: false");
+                }
+            }
+            catch (RuntimeException e) {
+                println("Migrated: false");
+                println("Migration Exception: " + e);
+            }
+
             println("----------");
 
-            if ((total % 10) == 0) {
-                printfln("Progress: %s / %s / %s", valid, total, reports.size());
+            if ((total % 5) == 0) {
+                printfln("Progress: %s / %s / %s / %s", valid, migrated, total, reports.size());
                 println("----------");
             }
         }
@@ -90,17 +102,5 @@ public class ArgusConverter
     private void printfln(String format, Object... args)
     {
         println(format(format, args));
-    }
-
-    private static Predicate<Report> reportMinViews(final int minViews)
-    {
-        return new Predicate<Report>()
-        {
-            @Override
-            public boolean apply(Report report)
-            {
-                return report.getViews() >= minViews;
-            }
-        };
     }
 }

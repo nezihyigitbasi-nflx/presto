@@ -15,11 +15,11 @@ import java.util.Map;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
 
-public final class ArgusReports
+public final class ReportTsvLoader
 {
     public static final JsonCodec<Map<String, Object>> CODEC = JsonCodec.mapJsonCodec(String.class, Object.class);
 
-    private ArgusReports() {}
+    private ReportTsvLoader() {}
 
     @SuppressWarnings("AssignmentToForLoopParameter")
     public static List<Report> loadReports()

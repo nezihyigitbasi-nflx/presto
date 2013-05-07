@@ -15,12 +15,16 @@ import com.google.common.base.Function;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.net.HostAndPort;
+import com.google.common.util.concurrent.SimpleTimeLimiter;
+import com.google.common.util.concurrent.TimeLimiter;
 import com.google.common.util.concurrent.UncheckedTimeoutException;
 import io.airlift.units.Duration;
 
 import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -31,6 +35,7 @@ import static java.lang.Long.parseLong;
 import static java.lang.System.currentTimeMillis;
 import static java.lang.System.nanoTime;
 import static java.util.Collections.unmodifiableList;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class PeregrineRunner
@@ -38,6 +43,8 @@ public class PeregrineRunner
 {
     private final Duration timeLimit;
     private final PeregrineClientFactory clientFactory;
+    private final ExecutorService timeLimiterExecutor;
+    private final TimeLimiter timeLimiter;
 
     public PeregrineRunner(Duration timeLimit)
     {
@@ -47,19 +54,22 @@ public class PeregrineRunner
                 .setReadTimeout(new Duration(10, SECONDS))
                 .setWriteTimeout(new Duration(10, SECONDS));
         this.clientFactory = new PeregrineClientFactory(config);
+        this.timeLimiterExecutor = Executors.newCachedThreadPool();
+        this.timeLimiter = new SimpleTimeLimiter(timeLimiterExecutor);
     }
 
     @Override
     public void close()
     {
         clientFactory.close();
+        timeLimiterExecutor.shutdownNow();
     }
 
     public List<List<Object>> execute(String username, String namespace, String sql)
             throws PeregrineException
     {
         PrismNamespace ns = clientFactory.lookupNamespace(namespace);
-        try (PeregrineClient client = clientFactory.create(ns.getPeregrineGateway())) {
+        try (PeregrineClient client = createClient(ns)) {
             System.out.printf("Peregrine: starting...\r");
             QueryId queryId = client.submitQuery(new UnparsedQuery(
                     username,
@@ -94,6 +104,12 @@ public class PeregrineRunner
         finally {
             System.out.printf("%s\r", repeat(" ", 70)).flush();
         }
+    }
+
+    private PeregrineClient createClient(PrismNamespace ns)
+    {
+        PeregrineClient client = clientFactory.create(ns.getPeregrineGateway());
+        return timeLimiter.newProxy(client, PeregrineClient.class, (long) timeLimit.toMillis(), MILLISECONDS);
     }
 
     private static List<List<Object>> peregrineResults(QueryResult result)

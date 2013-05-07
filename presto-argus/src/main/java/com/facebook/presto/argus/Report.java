@@ -40,7 +40,7 @@ public class Report
         return namespace;
     }
 
-    public String getQuery()
+    public String getOriginalQuery()
     {
         return query;
     }
