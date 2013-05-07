@@ -13,7 +13,6 @@ import com.facebook.swift.prism.PrismNamespace;
 import com.facebook.swift.service.ThriftClientConfig;
 import com.google.common.base.Function;
 import com.google.common.base.Splitter;
-import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.net.HostAndPort;
 import com.google.common.util.concurrent.UncheckedTimeoutException;
@@ -25,9 +24,11 @@ import java.util.List;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Strings.repeat;
 import static io.airlift.units.Duration.nanosSince;
 import static java.lang.Double.parseDouble;
 import static java.lang.Long.parseLong;
+import static java.lang.System.currentTimeMillis;
 import static java.lang.System.nanoTime;
 import static java.util.Collections.unmodifiableList;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -59,6 +60,7 @@ public class PeregrineRunner
     {
         PrismNamespace ns = clientFactory.lookupNamespace(namespace);
         try (PeregrineClient client = clientFactory.create(ns.getPeregrineGateway())) {
+            System.out.printf("Peregrine: starting...\r");
             QueryId queryId = client.submitQuery(new UnparsedQuery(
                     username,
                     "WITH true AS mode.exact " + sql,
@@ -74,12 +76,12 @@ public class PeregrineRunner
                 try {
                     response = client.getResponse(queryId);
                     QueryStatus status = response.getStatus();
-                    System.out.printf("Peregrine: %s: %s / %s [%s]\r",
+                    System.out.printf("Peregrine: %s: [%s / %s] [%s] [%s]\r",
                             status.getState(),
                             status.getCompletedSize(),
                             status.getTotalSize(),
-                            status.getQueueRank());
-                    System.out.flush();
+                            status.getQueueRank(),
+                            currentTimeMillis() / 1000).flush();
                 }
                 catch (QueryIdNotFoundException e) {
                     throw new PeregrineException("query ID not found", PeregrineErrorCode.UNKNOWN);
@@ -90,8 +92,7 @@ public class PeregrineRunner
             return peregrineResults(response.getResult());
         }
         finally {
-            System.out.print(Strings.repeat(" ", 70) + '\r');
-            System.out.flush();
+            System.out.printf("%s\r", repeat(" ", 70)).flush();
         }
     }
 
