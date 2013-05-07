@@ -8,6 +8,7 @@ import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedMultiset;
 import com.google.common.collect.Multiset;
+import com.google.common.collect.Ordering;
 import com.google.common.net.HostAndPort;
 import com.google.common.util.concurrent.UncheckedTimeoutException;
 import io.airlift.units.Duration;
@@ -27,6 +28,7 @@ import static com.facebook.presto.sql.parser.SqlParser.createStatement;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.base.Strings.repeat;
 import static io.airlift.units.Duration.nanosSince;
 import static java.lang.String.format;
 import static java.util.Collections.unmodifiableList;
@@ -226,8 +228,10 @@ public class Validator
             connection.setSchema(report.getNamespace());
             long start = System.nanoTime();
 
+            System.out.printf("Presto: starting...\r");
             try (Statement statement = connection.createStatement();
                     ResultSet resultSet = statement.executeQuery(sql)) {
+                System.out.printf("Presto: fetching data...\r");
                 prestoResults = convertJdbcResultSet(resultSet);
                 prestoState = PrestoState.SUCCESS;
                 prestoTime = nanosSince(start);
@@ -238,6 +242,9 @@ public class Validator
             prestoException = e;
             prestoState = isPrestoQueryInvalid(e) ? PrestoState.INVALID : PrestoState.FAILED;
             return false;
+        }
+        finally {
+            System.out.printf("%s\r", repeat(" ", 70)).flush();
         }
     }
 
@@ -255,8 +262,13 @@ public class Validator
             throws SQLException
     {
         int columnCount = resultSet.getMetaData().getColumnCount();
+        int rowCount = 0;
         ImmutableList.Builder<List<Object>> rows = ImmutableList.builder();
         while (resultSet.next()) {
+            rowCount++;
+            if ((rowCount % 1000) == 0) {
+                System.out.printf("Presto: %s\r", rowCount).flush();
+            }
             List<Object> row = new ArrayList<>();
             for (int i = 1; i <= columnCount; i++) {
                 Object value = resultSet.getObject(i);
@@ -284,32 +296,38 @@ public class Validator
 
     private static Comparator<List<Object>> rowComparator()
     {
+        final Comparator<Object> comparator = Ordering.from(columnComparator()).nullsFirst();
         return new Comparator<List<Object>>()
         {
-            @SuppressWarnings({"unchecked", "rawtypes"})
             @Override
             public int compare(List<Object> a, List<Object> b)
             {
                 checkArgument(a.size() == b.size(), "list sizes do not match");
                 for (int i = 0; i < a.size(); i++) {
-                    Object x = a.get(i);
-                    Object y = b.get(i);
-                    if (x == null) {
-                        return (y == null) ? 0 : -1;
-                    }
-                    if (y == null) {
-                        return 1;
-                    }
-                    checkArgument(x.getClass() == y.getClass(),
-                            "item types do not match: %s vs %s",
-                            x.getClass().getName(), y.getClass().getName());
-                    checkArgument(x instanceof Comparable, "item is not Comparable: %s", x.getClass().getName());
-                    int r = ((Comparable) x).compareTo(y);
+                    int r = comparator.compare(a.get(i), b.get(i));
                     if (r != 0) {
                         return r;
                     }
                 }
                 return 0;
+            }
+        };
+    }
+
+    private static Comparator<Object> columnComparator()
+    {
+        return new Comparator<Object>()
+        {
+            @SuppressWarnings("unchecked")
+            @Override
+            public int compare(Object a, Object b)
+            {
+                checkArgument(a.getClass() == b.getClass(),
+                        "item types do not match: %s vs %s",
+                        a.getClass().getName(), b.getClass().getName());
+                checkArgument(a instanceof Comparable,
+                        "item is not Comparable: %s", a.getClass().getName());
+                return ((Comparable<Object>) a).compareTo(b);
             }
         };
     }

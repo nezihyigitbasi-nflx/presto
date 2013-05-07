@@ -35,6 +35,9 @@ public class ArgusConverter
         Multiset<PrestoState> prestoStates = EnumMultiset.create(PrestoState.class);
 
         for (Report report : reports) {
+            if (report.getReportId() != 123094) {
+                continue;
+            }
             total++;
             println("Report: " + report.getReportId());
             println("Namespace: " + report.getNamespace());
