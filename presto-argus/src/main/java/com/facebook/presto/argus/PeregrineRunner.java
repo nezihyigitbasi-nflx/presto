@@ -30,6 +30,9 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Strings.repeat;
 import static io.airlift.units.Duration.nanosSince;
+import static java.lang.Double.NEGATIVE_INFINITY;
+import static java.lang.Double.NaN;
+import static java.lang.Double.POSITIVE_INFINITY;
 import static java.lang.Double.parseDouble;
 import static java.lang.Long.parseLong;
 import static java.lang.System.currentTimeMillis;
@@ -163,7 +166,19 @@ public class PeregrineRunner
                     @Override
                     public Object apply(String s)
                     {
-                        return s.equals("null") ? null : parseDouble(s);
+                        if (s.equals("null")) {
+                            return null;
+                        }
+                        s = s.trim();
+                        switch (s.toLowerCase()) {
+                            case "nan":
+                                return NaN;
+                            case "infinity":
+                                return POSITIVE_INFINITY;
+                            case "-infinity":
+                                return NEGATIVE_INFINITY;
+                        }
+                        return parseDouble(s);
                     }
                 };
         }
