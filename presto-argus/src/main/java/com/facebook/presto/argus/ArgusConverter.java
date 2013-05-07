@@ -6,9 +6,11 @@ import com.google.common.net.HostAndPort;
 
 import java.io.PrintWriter;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static com.facebook.presto.argus.Validator.PeregrineState;
 import static com.facebook.presto.argus.Validator.PrestoState;
+import static com.google.common.util.concurrent.Uninterruptibles.sleepUninterruptibly;
 import static java.lang.String.format;
 
 public class ArgusConverter
@@ -73,6 +75,11 @@ public class ArgusConverter
             catch (RuntimeException e) {
                 println("Migrated: false");
                 println("Migration Exception: " + e);
+                printStackTrace(e);
+            }
+
+            if ((validator.getPrestoException() != null) && (validator.getPrestoState() == PrestoState.FAILED)) {
+                printStackTrace(validator.getPrestoException());
             }
 
             println("----------");
@@ -102,5 +109,16 @@ public class ArgusConverter
     private void printfln(String format, Object... args)
     {
         println(format(format, args));
+    }
+
+    private static void printStackTrace(Throwable t)
+    {
+        System.out.flush();
+        sleepUninterruptibly(100, TimeUnit.MILLISECONDS);
+
+        t.printStackTrace();
+
+        System.err.flush();
+        sleepUninterruptibly(100, TimeUnit.MILLISECONDS);
     }
 }
