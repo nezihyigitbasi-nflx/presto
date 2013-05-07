@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Strings.repeat;
 import static io.airlift.units.Duration.nanosSince;
@@ -35,6 +34,7 @@ import static java.lang.Double.NaN;
 import static java.lang.Double.POSITIVE_INFINITY;
 import static java.lang.Double.parseDouble;
 import static java.lang.Long.parseLong;
+import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
 import static java.lang.System.nanoTime;
 import static java.util.Collections.unmodifiableList;
@@ -128,7 +128,10 @@ public class PeregrineRunner
 
         for (String line : result.getValues()) {
             List<String> values = ImmutableList.copyOf(splitter.split(line).iterator());
-            checkArgument(values.size() == types.size(), "wrong column count (expected %s, was %s)", types.size(), values.size());
+            if (values.size() != types.size()) {
+                String error = format("wrong column count (expected %s, was %s)", types.size(), values.size());
+                throw new PeregrineException(error, PeregrineErrorCode.UNKNOWN);
+            }
 
             List<Object> row = new ArrayList<>();
             for (int i = 0; i < types.size(); i++) {
