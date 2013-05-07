@@ -322,11 +322,12 @@ public class Validator
             @Override
             public int compare(Object a, Object b)
             {
-                checkArgument(a.getClass() == b.getClass(),
-                        "item types do not match: %s vs %s",
-                        a.getClass().getName(), b.getClass().getName());
-                checkArgument(a instanceof Comparable,
-                        "item is not Comparable: %s", a.getClass().getName());
+                if (a.getClass() != b.getClass()) {
+                    return -1;
+                }
+                if (!(a instanceof Comparable)) {
+                    return -1;
+                }
                 return ((Comparable<Object>) a).compareTo(b);
             }
         };
