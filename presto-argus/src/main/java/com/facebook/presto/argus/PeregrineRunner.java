@@ -116,6 +116,7 @@ public class PeregrineRunner
     }
 
     private static List<List<Object>> peregrineResults(QueryResult result)
+            throws PeregrineException
     {
         List<Function<String, Object>> types = new ArrayList<>();
         for (String type : result.getTypes()) {
@@ -140,6 +141,7 @@ public class PeregrineRunner
     }
 
     private static Function<String, Object> typeConversionFunction(String type)
+            throws PeregrineException
     {
         switch (type) {
             case "string":
@@ -182,6 +184,6 @@ public class PeregrineRunner
                     }
                 };
         }
-        throw new IllegalArgumentException("unsupported Peregrine type: " + type);
+        throw new PeregrineException("unsupported Peregrine type: " + type, PeregrineErrorCode.UNKNOWN);
     }
 }
