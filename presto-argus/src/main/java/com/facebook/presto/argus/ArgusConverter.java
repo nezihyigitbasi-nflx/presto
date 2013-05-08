@@ -1,17 +1,22 @@
 package com.facebook.presto.argus;
 
+import com.google.common.base.Throwables;
 import com.google.common.collect.EnumMultiset;
 import com.google.common.collect.Multiset;
 import com.google.common.net.HostAndPort;
 
 import java.io.PrintWriter;
 import java.util.List;
+import java.util.concurrent.CompletionService;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.TimeUnit;
 
 import static com.facebook.presto.argus.Validator.PeregrineState;
 import static com.facebook.presto.argus.Validator.PrestoState;
 import static com.google.common.util.concurrent.Uninterruptibles.sleepUninterruptibly;
 import static java.lang.String.format;
+import static java.util.concurrent.Executors.newFixedThreadPool;
 
 public class ArgusConverter
 {
@@ -26,22 +31,32 @@ public class ArgusConverter
     }
 
     public void run(MigrationManager manager)
+            throws InterruptedException
     {
+        CompletionService<Validator> completionService = new ExecutorCompletionService<>(newFixedThreadPool(10));
+        List<Report> reports = manager.getReports();
+
+        for (Report report : reports) {
+            Validator validator = new Validator(TEST_USER, PRESTO_GATEWAY, report);
+            completionService.submit(validateTask(validator), validator);
+        }
+
         int total = 0;
         int valid = 0;
         int migrated = 0;
         Multiset<PeregrineState> peregrineStates = EnumMultiset.create(PeregrineState.class);
         Multiset<PrestoState> prestoStates = EnumMultiset.create(PrestoState.class);
 
-        List<Report> reports = manager.getReports();
-        for (Report report : reports) {
+        while (total < reports.size()) {
             total++;
+
+            Validator validator = takeUnchecked(completionService);
+            Report report = validator.getReport();
+
             println("Report: " + report.getReportId());
             println("Namespace: " + report.getNamespace());
 
-            Validator validator = new Validator(TEST_USER, PRESTO_GATEWAY, report);
-
-            if (validator.valid()) {
+            if (validator.resultsMatch()) {
                 valid++;
             }
 
@@ -51,6 +66,11 @@ public class ArgusConverter
             println("Peregrine State: " + validator.getPeregrineState());
             println("Presto State: " + validator.getPrestoState());
             println("Results Match: " + validator.resultsMatch());
+
+            String comparison = validator.getResultsComparison().trim();
+            if (!comparison.isEmpty()) {
+                println(comparison);
+            }
 
             if (validator.getPeregrineException() != null) {
                 println("Peregrine Exception: " + validator.getPeregrineException());
@@ -120,5 +140,28 @@ public class ArgusConverter
 
         System.err.flush();
         sleepUninterruptibly(100, TimeUnit.MILLISECONDS);
+    }
+
+    private static <T> T takeUnchecked(CompletionService<T> completionService)
+            throws InterruptedException
+    {
+        try {
+            return completionService.take().get();
+        }
+        catch (ExecutionException e) {
+            throw Throwables.propagate(e);
+        }
+    }
+
+    private static Runnable validateTask(final Validator validator)
+    {
+        return new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                validator.valid();
+            }
+        };
     }
 }

@@ -29,7 +29,6 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.base.Strings.nullToEmpty;
-import static com.google.common.base.Strings.repeat;
 import static io.airlift.units.Duration.nanosSince;
 import static java.lang.String.format;
 import static java.util.Collections.unmodifiableList;
@@ -78,6 +77,11 @@ public class Validator
                 canPrestoParse() &&
                 canPrestoExecute() &&
                 compareResults();
+    }
+
+    public Report getReport()
+    {
+        return report;
     }
 
     public PeregrineState getPeregrineState()
@@ -147,34 +151,45 @@ public class Validator
                 .toString();
     }
 
+    public String getResultsComparison()
+    {
+        if (resultsMatch || (peregrineResults == null) || (prestoResults == null)) {
+            return "";
+        }
+
+        Multiset<List<Object>> peregrine = ImmutableSortedMultiset.copyOf(rowComparator(), getPeregrineResults());
+        Multiset<List<Object>> presto = ImmutableSortedMultiset.copyOf(rowComparator(), getPrestoResults());
+        StringBuilder sb = new StringBuilder();
+
+        sb.append(format("Peregrine %s rows, Presto %s rows%n", peregrine.size(), presto.size()));
+        if (peregrine.size() == presto.size()) {
+            Iterator<List<Object>> peregrineIter = peregrine.iterator();
+            Iterator<List<Object>> prestoIter = presto.iterator();
+            int i = 0;
+            int n = 0;
+            while (i < peregrine.size()) {
+                i++;
+                List<Object> peregrineRow = peregrineIter.next();
+                List<Object> prestoRow = prestoIter.next();
+                if (!peregrineRow.equals(prestoRow)) {
+                    sb.append(format("%s: %s: %s %s%n", i,
+                            peregrineRow.equals(prestoRow),
+                            peregrineRow, prestoRow));
+                    n++;
+                    if (n >= 100) {
+                        break;
+                    }
+                }
+            }
+        }
+        return sb.toString();
+    }
+
     private boolean compareResults()
     {
         Multiset<List<Object>> peregrine = ImmutableSortedMultiset.copyOf(rowComparator(), getPeregrineResults());
         Multiset<List<Object>> presto = ImmutableSortedMultiset.copyOf(rowComparator(), getPrestoResults());
         resultsMatch = peregrine.equals(presto);
-        if (!resultsMatch) {
-            System.out.printf("Peregrine %s rows, Presto %s rows%n", peregrine.size(), presto.size());
-            if (peregrine.size() == presto.size()) {
-                Iterator<List<Object>> peregrineIter = peregrine.iterator();
-                Iterator<List<Object>> prestoIter = presto.iterator();
-                int i = 0;
-                int n = 0;
-                while (i < peregrine.size()) {
-                    i++;
-                    List<Object> peregrineRow = peregrineIter.next();
-                    List<Object> prestoRow = prestoIter.next();
-                    if (!peregrineRow.equals(prestoRow)) {
-                        System.out.printf("%s: %s: %s %s%n", i,
-                                peregrineRow.equals(prestoRow),
-                                peregrineRow, prestoRow);
-                        n++;
-                        if (n >= 100) {
-                            break;
-                        }
-                    }
-                }
-            }
-        }
         return resultsMatch;
     }
 
@@ -229,10 +244,8 @@ public class Validator
             connection.setSchema(report.getNamespace());
             long start = System.nanoTime();
 
-            System.out.printf("Presto: starting...\r");
             try (Statement statement = connection.createStatement();
                     ResultSet resultSet = statement.executeQuery(sql)) {
-                System.out.printf("Presto: fetching data...\r");
                 prestoResults = convertJdbcResultSet(resultSet);
                 prestoState = PrestoState.SUCCESS;
                 prestoTime = nanosSince(start);
@@ -243,9 +256,6 @@ public class Validator
             prestoException = e;
             prestoState = isPrestoQueryInvalid(e) ? PrestoState.INVALID : PrestoState.FAILED;
             return false;
-        }
-        finally {
-            System.out.printf("%s\r", repeat(" ", 70)).flush();
         }
     }
 
@@ -266,13 +276,8 @@ public class Validator
             throws SQLException
     {
         int columnCount = resultSet.getMetaData().getColumnCount();
-        int rowCount = 0;
         ImmutableList.Builder<List<Object>> rows = ImmutableList.builder();
         while (resultSet.next()) {
-            rowCount++;
-            if ((rowCount % 1000) == 0) {
-                System.out.printf("Presto: %s\r", rowCount).flush();
-            }
             List<Object> row = new ArrayList<>();
             for (int i = 1; i <= columnCount; i++) {
                 Object value = resultSet.getObject(i);
