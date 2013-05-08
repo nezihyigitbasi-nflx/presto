@@ -254,6 +254,9 @@ public class Validator
             if (t.toString().contains(".SemanticException:")) {
                 return true;
             }
+            if (t.getMessage().matches("Function .* not registered")) {
+                return true;
+            }
         }
         return false;
     }

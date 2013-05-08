@@ -10,6 +10,7 @@ import com.facebook.presto.argus.peregrine.QueryResult;
 import com.facebook.presto.argus.peregrine.QueryStatus;
 import com.facebook.presto.argus.peregrine.UnparsedQuery;
 import com.facebook.swift.prism.PrismNamespace;
+import com.facebook.swift.service.RuntimeTTransportException;
 import com.facebook.swift.service.ThriftClientConfig;
 import com.google.common.base.Function;
 import com.google.common.base.Splitter;
@@ -98,6 +99,9 @@ public class PeregrineRunner
                 }
                 catch (QueryIdNotFoundException e) {
                     throw new PeregrineException("query ID not found", PeregrineErrorCode.UNKNOWN);
+                }
+                catch (RuntimeTTransportException e) {
+                    throw new UncheckedTimeoutException(e);
                 }
             }
             while (!response.getStatus().getState().isDone());
