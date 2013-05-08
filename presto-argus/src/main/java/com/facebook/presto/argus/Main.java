@@ -11,7 +11,7 @@ import static java.lang.System.currentTimeMillis;
 
 public final class Main
 {
-    public static final String LOG_FILE = format("/Users/dphillips/tmp/argus-report.%s.txt", currentTimeMillis());
+    public static final String LOG_FILE = format("%s/tmp/argus-report.%s.txt", System.getProperty("user.home"), currentTimeMillis());
 
     private Main() {}
 
