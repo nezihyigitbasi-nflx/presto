@@ -28,6 +28,7 @@ import static com.facebook.presto.sql.parser.SqlParser.createStatement;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.base.Strings.nullToEmpty;
 import static com.google.common.base.Strings.repeat;
 import static io.airlift.units.Duration.nanosSince;
 import static java.lang.String.format;
@@ -254,7 +255,7 @@ public class Validator
             if (t.toString().contains(".SemanticException:")) {
                 return true;
             }
-            if (t.getMessage().matches("Function .* not registered")) {
+            if (nullToEmpty(t.getMessage()).matches("Function .* not registered")) {
                 return true;
             }
         }
