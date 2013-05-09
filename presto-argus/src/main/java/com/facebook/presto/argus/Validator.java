@@ -266,19 +266,11 @@ public class Validator
             return true;
         }
         String message = nullToEmpty(e.getMessage());
-        if (message.endsWith(" table not found")) {
-            return true;
-        }
-        if (message.endsWith(" is offline and can not be queried")) {
-            return true;
-        }
-        if (message.equals("This query is touching too much data!!!")) {
-            return true;
-        }
-        if (message.startsWith("Partition predicate not specified for any key")) {
-            return true;
-        }
-        return false;
+        return message.endsWith(" table not found") ||
+                message.endsWith(" is offline and can not be queried") ||
+                message.equals("This query is touching too much data!!!") ||
+                message.equals("WITH_ONLY queries can not be executed") ||
+                message.startsWith("Partition predicate not specified for any key");
     }
 
     private static boolean isPrestoQueryInvalid(SQLException e)
