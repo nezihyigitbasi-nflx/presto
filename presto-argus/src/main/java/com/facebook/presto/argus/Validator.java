@@ -204,7 +204,7 @@ public class Validator
         }
         catch (PeregrineException e) {
             peregrineException = e;
-            if (e.getCode().isInvalidQuery()) {
+            if (isPeregrineQueryInvalid(e)) {
                 peregrineState = PeregrineState.INVALID;
             }
             else if (e.getCode() == PeregrineErrorCode.OUT_OF_MEMORY) {
@@ -257,6 +257,28 @@ public class Validator
             prestoState = isPrestoQueryInvalid(e) ? PrestoState.INVALID : PrestoState.FAILED;
             return false;
         }
+    }
+
+    @SuppressWarnings("RedundantIfStatement")
+    private static boolean isPeregrineQueryInvalid(PeregrineException e)
+    {
+        if (e.getCode().isInvalidQuery()) {
+            return true;
+        }
+        String message = nullToEmpty(e.getMessage());
+        if (message.endsWith(" table not found")) {
+            return true;
+        }
+        if (message.endsWith(" is offline and can not be queried")) {
+            return true;
+        }
+        if (message.equals("This query is touching too much data!!!")) {
+            return true;
+        }
+        if (message.startsWith("Partition predicate not specified for any key")) {
+            return true;
+        }
+        return false;
     }
 
     private static boolean isPrestoQueryInvalid(SQLException e)

@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import static com.facebook.presto.argus.Validator.PeregrineState;
@@ -33,13 +34,15 @@ public class ArgusConverter
     public void run(MigrationManager manager)
             throws InterruptedException
     {
-        CompletionService<Validator> completionService = new ExecutorCompletionService<>(newFixedThreadPool(10));
+        ExecutorService executor = newFixedThreadPool(10);
+        CompletionService<Validator> completionService = new ExecutorCompletionService<>(executor);
         List<Report> reports = manager.getReports();
 
         for (Report report : reports) {
             Validator validator = new Validator(TEST_USER, PRESTO_GATEWAY, report);
             completionService.submit(validateTask(validator), validator);
         }
+        executor.shutdown();
 
         int total = 0;
         int valid = 0;
