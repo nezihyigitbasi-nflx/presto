@@ -1,8 +1,6 @@
 package com.facebook.presto.argus;
 
 import com.google.common.base.Throwables;
-import com.google.common.collect.EnumMultiset;
-import com.google.common.collect.Multiset;
 import com.google.common.net.HostAndPort;
 
 import java.io.PrintWriter;
@@ -47,8 +45,6 @@ public class ArgusConverter
         int total = 0;
         int valid = 0;
         int migrated = 0;
-        Multiset<PeregrineState> peregrineStates = EnumMultiset.create(PeregrineState.class);
-        Multiset<PrestoState> prestoStates = EnumMultiset.create(PrestoState.class);
 
         while (total < reports.size()) {
             total++;
@@ -62,9 +58,6 @@ public class ArgusConverter
             if (validator.resultsMatch()) {
                 valid++;
             }
-
-            peregrineStates.add(validator.getPeregrineState());
-            prestoStates.add(validator.getPrestoState());
 
             println("Peregrine State: " + validator.getPeregrineState());
             println("Presto State: " + validator.getPrestoState());
@@ -108,18 +101,9 @@ public class ArgusConverter
             println("----------");
 
             if ((total % 5) == 0) {
-                printfln("Progress: %s / %s / %s / %s", valid, migrated, total, reports.size());
+                println(format("Progress: %s / %s / %s / %s", valid, migrated, total, reports.size()));
                 println("----------");
             }
-        }
-
-        println("Valid: " + valid);
-        println("Total: " + total);
-        for (Multiset.Entry<PeregrineState> entry : peregrineStates.entrySet()) {
-            printfln("Peregrine: %s: %s", entry.getElement(), entry.getCount());
-        }
-        for (Multiset.Entry<PrestoState> entry : prestoStates.entrySet()) {
-            printfln("Presto: %s: %s", entry.getElement(), entry.getCount());
         }
     }
 
@@ -127,11 +111,6 @@ public class ArgusConverter
     {
         System.out.println(s);
         logFile.println(s);
-    }
-
-    private void printfln(String format, Object... args)
-    {
-        println(format(format, args));
     }
 
     private static void printStackTrace(Throwable t)
