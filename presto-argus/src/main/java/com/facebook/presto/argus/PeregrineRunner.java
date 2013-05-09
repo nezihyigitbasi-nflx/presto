@@ -9,6 +9,7 @@ import com.facebook.presto.argus.peregrine.QueryResponse;
 import com.facebook.presto.argus.peregrine.QueryResult;
 import com.facebook.presto.argus.peregrine.UnparsedQuery;
 import com.facebook.swift.prism.PrismNamespace;
+import com.facebook.swift.prism.PrismNamespaceNotFound;
 import com.facebook.swift.service.RuntimeTTransportException;
 import com.facebook.swift.service.ThriftClientConfig;
 import com.google.common.base.Function;
@@ -69,7 +70,14 @@ public class PeregrineRunner
     public List<List<Object>> execute(String username, String namespace, String sql)
             throws PeregrineException
     {
-        PrismNamespace ns = clientFactory.lookupNamespace(namespace);
+        PrismNamespace ns;
+        try {
+            ns = clientFactory.lookupNamespace(namespace);
+        }
+        catch (PrismNamespaceNotFound e) {
+            throw new PeregrineException("prism namespace not found: " + namespace, PeregrineErrorCode.UNKNOWN);
+        }
+
         try (PeregrineClient client = createClient(ns)) {
             QueryId queryId = client.submitQuery(new UnparsedQuery(
                     username,

@@ -57,12 +57,10 @@ public class PeregrineClientFactory
     }
 
     public PrismNamespace lookupNamespace(String namespace)
+            throws PrismNamespaceNotFound
     {
         try (PrismServiceClient client = prismServiceClientProvider.get()) {
             return client.getNamespace(namespace);
-        }
-        catch (PrismNamespaceNotFound e) {
-            throw new RuntimeException("Namespace not found:" + namespace, e);
         }
         catch (PrismRepositoryError e) {
             throw new RuntimeException(e);
