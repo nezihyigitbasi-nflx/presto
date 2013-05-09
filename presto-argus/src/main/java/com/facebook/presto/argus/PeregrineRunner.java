@@ -145,15 +145,6 @@ public class PeregrineRunner
             throws PeregrineException
     {
         switch (type) {
-            case "string":
-                return new Function<String, Object>()
-                {
-                    @Override
-                    public Object apply(String s)
-                    {
-                        return s.equals("null") ? null : s;
-                    }
-                };
             case "bigint":
                 return new Function<String, Object>()
                 {
@@ -184,7 +175,15 @@ public class PeregrineRunner
                         return parseDouble(s);
                     }
                 };
+            default:
+                return new Function<String, Object>()
+                {
+                    @Override
+                    public Object apply(String s)
+                    {
+                        return s.equals("null") ? null : s;
+                    }
+                };
         }
-        throw new PeregrineException("unsupported Peregrine type: " + type, PeregrineErrorCode.UNKNOWN);
     }
 }
