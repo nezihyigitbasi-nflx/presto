@@ -1,7 +1,7 @@
-tree grammar StatementBuilder;
+tree grammar PeregrineStatementBuilder;
 
 options {
-    tokenVocab = Statement;
+    tokenVocab = PeregrineStatement;
     output = AST;
     ASTLabelType = CommonTree;
 }
@@ -47,11 +47,6 @@ statement returns [Statement value]
     | showColumns     { $value = $showColumns.value; }
     | showPartitions  { $value = $showPartitions.value; }
     | showFunctions   { $value = $showFunctions.value; }
-    | createMaterializedView { $value = $createMaterializedView.value; }
-    | refreshMaterializedView { $value = $refreshMaterializedView.value; }
-    | createAlias     { $value = $createAlias.value; }
-    | dropAlias     { $value = $dropAlias.value; }
-    | dropTable       { $value = $dropTable.value; }
     ;
 
 query returns [Query value]
@@ -267,7 +262,8 @@ identList returns [List<String> value = new ArrayList<>()]
 
 ident returns [String value]
     : i=IDENT        { $value = $i.text; }
-    | q=QUOTED_IDENT { $value = $q.text; }
+    | b=BACKQUOTED_IDENT { $value = $b.text; }
+    | x=BAD_IDENT { $value = $x.text; }
     ;
 
 string returns [String value]
@@ -418,32 +414,4 @@ showPartitions returns [Statement value]
 
 showFunctions returns [Statement value]
     : SHOW_FUNCTIONS { $value = new ShowFunctions(); }
-    ;
-
-createMaterializedView returns [Statement value]
-    : ^(CREATE_MATERIALIZED_VIEW qname refresh=viewRefresh? restrictedSelectStmt) { $value = new CreateMaterializedView($qname.value, Optional.fromNullable($refresh.value), $restrictedSelectStmt.value); }
-    ;
-
-refreshMaterializedView returns [Statement value]
-    : ^(REFRESH_MATERIALIZED_VIEW qname) { $value = new RefreshMaterializedView($qname.value); }
-    ;
-
-viewRefresh returns [String value]
-    : ^(REFRESH integer) { $value = $integer.value; }
-    ;
-
-createAlias returns [Statement value]
-    : ^(CREATE_ALIAS qname remote=forRemote) { $value = new CreateAlias($qname.value, $remote.value); }
-    ;
-
-dropAlias returns [Statement value]
-    : ^(DROP_ALIAS qname) { $value = new DropAlias($qname.value); }
-    ;
-
-forRemote returns [QualifiedName value]
-    : ^(FOR qname) { $value = $qname.value; }
-    ;
-
-dropTable returns [Statement value]
-    : ^(DROP_TABLE qname) { $value = new DropTable($qname.value); }
     ;

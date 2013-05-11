@@ -1,6 +1,9 @@
 package com.facebook.presto.argus;
 
-import com.google.common.base.Objects;
+import com.facebook.presto.sql.SqlFormatter;
+import com.facebook.presto.sql.parser.ParsingException;
+import com.facebook.presto.sql.parser.PeregrineSqlParser;
+import com.facebook.presto.sql.tree.Statement;
 import org.joda.time.DateTime;
 
 import java.util.Map;
@@ -18,7 +21,9 @@ public class Report
     private final String query;
     private final Map<String, String> variables;
     private final long views;
-    private final String cleanQuery;
+    private final String runnablePeregrineQuery;
+    private final String translatedPrestoQuery;
+    private final String runnablePrestoQuery;
 
     public Report(long reportId, String namespace, String query, Map<String, String> variables, long views)
     {
@@ -27,7 +32,12 @@ public class Report
         this.query = checkNotNull(query, "query is null");
         this.variables = checkNotNull(variables, "variables is null");
         this.views = views;
-        this.cleanQuery = cleanQuery(query, variables);
+
+        String sql = removePeregrineSettings(query);
+        String translated = translateQuery(sql);
+        this.runnablePeregrineQuery = cleanQuery(sql, variables);
+        this.translatedPrestoQuery = translated;
+        this.runnablePrestoQuery = cleanQuery(translated, variables);
     }
 
     public long getReportId()
@@ -55,28 +65,24 @@ public class Report
         return views;
     }
 
-    public String getCleanQuery()
+    public String getRunnablePeregrineQuery()
     {
-        return cleanQuery;
+        return runnablePeregrineQuery;
     }
 
-    @Override
-    public String toString()
+    public String getTranslatedPrestoQuery()
     {
-        return Objects.toStringHelper(this)
-                .add("reportId", reportId)
-                .add("namespace", namespace)
-                .add("query", query)
-                .add("variables", variables)
-                .add("views", views)
-                .add("cleanQuery", cleanQuery)
-                .toString();
+        return translatedPrestoQuery;
+    }
+
+    public String getRunnablePrestoQuery()
+    {
+        return runnablePrestoQuery;
     }
 
     private static String cleanQuery(String sql, Map<String, String> variables)
     {
         sql = replaceDateMacros(sql);
-        sql = removePeregrineSettings(sql);
         sql = replaceVariables(sql, variables);
         sql = sql.replaceAll("\n+", "\n").trim();
         return sql;
@@ -110,5 +116,40 @@ public class Report
             sql = sql.replace("$" + entry.getKey() + "$", entry.getValue());
         }
         return sql;
+    }
+
+    private static String translateQuery(String sql)
+    {
+        sql = sql.trim();
+        if (sql.endsWith(";")) {
+            sql = sql.substring(0, sql.length() - 1);
+        }
+
+        Statement statement;
+        try {
+            statement = PeregrineSqlParser.createStatement(sql);
+        }
+        catch (ParsingException e) {
+            if (false) {
+                if (sql.toLowerCase().replaceAll("\\s", " ").contains(" union all ")) {
+                    return sql;
+                }
+                if (sql.toLowerCase().replaceAll("\\s", " ").contains(" rlike ")) {
+                    return sql;
+                }
+                if (e.getMessage().endsWith("no viable alternative at character '['")) {
+                    return sql;
+                }
+                if (e.getMessage().endsWith("no viable alternative at input '*'")) {
+                    return sql;
+                }
+                System.err.println(e);
+                System.err.println(sql);
+                System.err.println("----------");
+            }
+            return sql;
+        }
+
+        return SqlFormatter.formatSql(statement);
     }
 }

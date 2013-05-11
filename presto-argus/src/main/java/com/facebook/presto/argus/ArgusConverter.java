@@ -32,9 +32,20 @@ public class ArgusConverter
     public void run(MigrationManager manager)
             throws InterruptedException
     {
-        ExecutorService executor = newFixedThreadPool(10);
+        ExecutorService executor = newFixedThreadPool(1);
         CompletionService<Validator> completionService = new ExecutorCompletionService<>(executor);
         List<Report> reports = manager.getReports();
+
+        for (Report report : reports) {
+            System.out.println("Report ID: " + report.getReportId());
+            System.out.println("Peregrine SQL:\n" + report.getRunnablePeregrineQuery());
+            System.out.println();
+            System.out.println("Presto SQL:\n" + report.getRunnablePrestoQuery());
+            System.out.println("----------");
+        }
+        if (true) {
+            return;
+        }
 
         for (Report report : reports) {
             Validator validator = new Validator(TEST_USER, PRESTO_GATEWAY, report);
@@ -73,25 +84,33 @@ public class ArgusConverter
             }
             if (validator.getPrestoException() != null) {
                 println("Presto Exception: " + validator.getPrestoException());
-                println("SQL:\n" + report.getCleanQuery());
+                println("Peregrine SQL:\n" + report.getRunnablePeregrineQuery());
+                println("Presto SQL:\n" + report.getRunnablePrestoQuery());
             }
             else if ((validator.getPeregrineState() == PeregrineState.SUCCESS) && (!validator.resultsMatch())) {
-                println("SQL:\n" + report.getCleanQuery());
+                println("Peregrine SQL:\n" + report.getRunnablePeregrineQuery());
+                println("Presto SQL:\n" + report.getRunnablePrestoQuery());
             }
 
-            try {
-                if (manager.migrateReport(report, validator, validator.resultsMatch())) {
-                    migrated++;
-                    println("Migrated: true");
-                }
-                else {
-                    println("Migrated: false");
-                }
+            if (validator.resultsMatch()) {
+                println("Peregrine SQL:\n" + report.getRunnablePeregrineQuery());
+                println("Presto SQL:\n" + report.getRunnablePrestoQuery());
             }
-            catch (RuntimeException e) {
-                println("Migrated: false");
-                println("Migration Exception: " + e);
-                printStackTrace(e);
+            else {
+                try {
+                    if (manager.migrateReport(report, validator, validator.resultsMatch())) {
+                        migrated++;
+                        println("Migrated: true");
+                    }
+                    else {
+                        println("Migrated: false");
+                    }
+                }
+                catch (RuntimeException e) {
+                    println("Migrated: false");
+                    println("Migration Exception: " + e);
+                    printStackTrace(e);
+                }
             }
 
             if ((validator.getPrestoException() != null) && (validator.getPrestoState() == PrestoState.FAILED)) {

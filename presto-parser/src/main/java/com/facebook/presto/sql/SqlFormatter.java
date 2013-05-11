@@ -11,7 +11,6 @@ import com.facebook.presto.sql.tree.NaturalJoin;
 import com.facebook.presto.sql.tree.Node;
 import com.facebook.presto.sql.tree.Query;
 import com.facebook.presto.sql.tree.Relation;
-import com.facebook.presto.sql.tree.Select;
 import com.facebook.presto.sql.tree.SortItem;
 import com.facebook.presto.sql.tree.Subquery;
 import com.facebook.presto.sql.tree.Table;
@@ -90,7 +89,11 @@ public final class SqlFormatter
                 }
             }
 
-            process(node.getSelect(), indent);
+            append(indent, "SELECT");
+            if (node.getSelect().isDistinct()) {
+                builder.append(" DISTINCT");
+            }
+            appendList(indent, node.getSelect().getSelectItems(), expressionFormatterFunction());
 
             append(indent, "FROM");
             if (node.getFrom().size() > 1) {
@@ -118,8 +121,8 @@ public final class SqlFormatter
             }
 
             if (!node.getGroupBy().isEmpty()) {
-                append(indent, "GROUP BY " + Joiner.on(", ").join(Iterables.transform(node.getGroupBy(), expressionFormatterFunction())))
-                        .append('\n');
+                append(indent, "GROUP BY");
+                appendList(indent, node.getGroupBy(), expressionFormatterFunction());
             }
 
             if (node.getHaving().isPresent()) {
@@ -128,8 +131,8 @@ public final class SqlFormatter
             }
 
             if (!node.getOrderBy().isEmpty()) {
-                append(indent, "ORDER BY " + Joiner.on(", ").join(Iterables.transform(node.getOrderBy(), orderByFormatterFunction())))
-                        .append('\n');
+                append(indent, "ORDER BY ");
+                appendList(indent, node.getOrderBy(), orderByFormatterFunction());
             }
 
             if (node.getLimit().isPresent()) {
@@ -140,27 +143,19 @@ public final class SqlFormatter
             return null;
         }
 
-        @Override
-        protected Void visitSelect(Select node, Integer indent)
+        private <T> StringBuilder appendList(Integer indent, List<T> list, Function<T, String> formatterFunction)
         {
-            append(indent, "SELECT");
-            if (node.isDistinct()) {
-                builder.append(" DISTINCT");
-            }
+            Iterable<String> formatted = Iterables.transform(list, formatterFunction);
+            String oneLine = Joiner.on(", ").join(formatted);
 
-            if (node.getSelectItems().size() > 1) {
+            if ((list.size() > 1) && (oneLine.length() > 30)) {
                 builder.append("\n  ");
-                append(indent, Joiner.on('\n' + indentString(indent) + ", ")
-                        .join(Iterables.transform(node.getSelectItems(), expressionFormatterFunction())));
+                append(indent, Joiner.on('\n' + indentString(indent) + ", ").join(formatted));
             }
             else {
-                builder.append(' ')
-                        .append(formatExpression(Iterables.getOnlyElement(node.getSelectItems())));
+                builder.append(' ').append(oneLine);
             }
-
-            builder.append('\n');
-
-            return null;
+            return builder.append('\n');
         }
 
         @Override

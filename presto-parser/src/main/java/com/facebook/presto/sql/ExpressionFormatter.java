@@ -1,5 +1,6 @@
 package com.facebook.presto.sql;
 
+import com.facebook.presto.sql.parser.ParsingException;
 import com.facebook.presto.sql.tree.AliasedExpression;
 import com.facebook.presto.sql.tree.AllColumns;
 import com.facebook.presto.sql.tree.ArithmeticExpression;
@@ -50,6 +51,7 @@ import java.util.List;
 
 import static com.facebook.presto.sql.SqlFormatter.formatSql;
 import static com.facebook.presto.sql.SqlFormatter.orderByFormatterFunction;
+import static com.facebook.presto.sql.parser.SqlParser.createExpression;
 import static com.google.common.collect.Iterables.transform;
 
 public final class ExpressionFormatter
@@ -130,7 +132,7 @@ public final class ExpressionFormatter
         @Override
         protected String visitStringLiteral(StringLiteral node, Void context)
         {
-            return "'" + node.getValue() + "'";
+            return "'" + node.getValue().replace("'", "''") + "'";
         }
 
         @Override
@@ -230,31 +232,31 @@ public final class ExpressionFormatter
         @Override
         protected String visitLogicalBinaryExpression(LogicalBinaryExpression node, Void context)
         {
-            return formatBinaryExpression(node.getType().toString(), node.getLeft(), node.getRight());
+            return formatBinaryExpression(node.getType().toString(), node.getLeft(), node.getRight(), context);
         }
 
         @Override
         protected String visitNotExpression(NotExpression node, Void context)
         {
-            return "(NOT " + process(node.getValue(), null) + ")";
+            return formatLeftUnaryExpression("NOT", node.getValue(), context);
         }
 
         @Override
         protected String visitComparisonExpression(ComparisonExpression node, Void context)
         {
-            return formatBinaryExpression(node.getType().getValue(), node.getLeft(), node.getRight());
+            return formatBinaryExpression(node.getType().getValue(), node.getLeft(), node.getRight(), context);
         }
 
         @Override
         protected String visitIsNullPredicate(IsNullPredicate node, Void context)
         {
-            return "(" + process(node.getValue(), null) + " IS NULL)";
+            return formatRightUnaryExpression("IS NULL", node.getValue(), context);
         }
 
         @Override
         protected String visitIsNotNullPredicate(IsNotNullPredicate node, Void context)
         {
-            return "(" + process(node.getValue(), null) + " IS NOT NULL)";
+            return formatRightUnaryExpression("IS NOT NULL", node.getValue(), context);
         }
 
         @Override
@@ -294,27 +296,17 @@ public final class ExpressionFormatter
         @Override
         protected String visitArithmeticExpression(ArithmeticExpression node, Void context)
         {
-            return formatBinaryExpression(node.getType().getValue(), node.getLeft(), node.getRight());
+            return formatBinaryExpression(node.getType().getValue(), node.getLeft(), node.getRight(), context);
         }
 
         @Override
         protected String visitLikePredicate(LikePredicate node, Void context)
         {
-            StringBuilder builder = new StringBuilder();
-
-            builder.append('(')
-                    .append(process(node.getValue(), null))
-                    .append(" LIKE ")
-                    .append(process(node.getPattern(), null));
-
-            if (node.getEscape() != null) {
-                builder.append(" ESCAPE ")
-                        .append(process(node.getEscape(), null));
+            if (node.getEscape() == null) {
+                return formatBinaryExpression("LIKE", node.getValue(), node.getPattern(), context);
             }
 
-            builder.append(')');
-
-            return builder.toString();
+            return formatTernaryExpression("LIKE", "ESCAPE", node.getValue(), node.getPattern(), node.getEscape(), context);
         }
 
         @Override
@@ -347,7 +339,7 @@ public final class ExpressionFormatter
             }
             parts.add("END");
 
-            return "(" + Joiner.on(' ').join(parts.build()) + ")";
+            return Joiner.on(' ').join(parts.build());
         }
 
         @Override
@@ -367,7 +359,7 @@ public final class ExpressionFormatter
             }
             parts.add("END");
 
-            return "(" + Joiner.on(' ').join(parts.build()) + ")";
+            return Joiner.on(' ').join(parts.build());
         }
 
         @Override
@@ -379,14 +371,14 @@ public final class ExpressionFormatter
         @Override
         protected String visitBetweenPredicate(BetweenPredicate node, Void context)
         {
-            return "(" + process(node.getValue(), context) + " BETWEEN " +
-                    process(node.getMin(), context) + " AND " + process(node.getMax(), context) + ")";
+            return formatTernaryExpression("BETWEEN", "AND", node.getValue(), node.getMax(), node.getMax(), context);
         }
 
         @Override
         protected String visitInPredicate(InPredicate node, Void context)
         {
-            return "(" + process(node.getValue(), context) + " IN " + process(node.getValueList(), context) + ")";
+            String in = "IN " + process(node.getValueList(), context);
+            return formatRightUnaryExpression(in, node.getValue(), context);
         }
 
         @Override
@@ -452,11 +444,6 @@ public final class ExpressionFormatter
             throw new IllegalArgumentException("unhandled type: " + node.getType());
         }
 
-        private String formatBinaryExpression(String operator, Expression left, Expression right)
-        {
-            return '(' + process(left, null) + ' ' + operator + ' ' + process(right, null) + ')';
-        }
-
         private String joinExpressions(List<Expression> expressions)
         {
             return Joiner.on(", ").join(transform(expressions, new Function<Expression, Object>()
@@ -469,10 +456,108 @@ public final class ExpressionFormatter
             }));
         }
 
+        private String formatLeftUnaryExpression(String operator, Expression node, Void context)
+        {
+            String operand = process(node, context);
+
+            String full = String.format("%s (%s)", operator, operand);
+            String none = String.format("%s %s", operator, operand);
+
+            return expressionsEqual(none, full) ? none : full;
+        }
+
+        private String formatRightUnaryExpression(String operator, Expression node, Void context)
+        {
+            String operand = process(node, context);
+
+            String full = String.format("(%s) %s", operand, operator);
+            String none = String.format("%s %s", operand, operator);
+
+            return expressionsEqual(none, full) ? none : full;
+        }
+
+        private String formatBinaryExpression(String operator, Expression leftNode, Expression rightNode, Void context)
+        {
+            String left = process(leftNode, context);
+            String right = process(rightNode, context);
+
+            String full = String.format("(%s) %s (%s)", left, operator, right);
+            String leftOnly = String.format("(%s) %s %s", left, operator, right);
+            String rightOnly = String.format("%s %s (%s)", left, operator, right);
+            String none = String.format("%s %s %s", left, operator, right);
+
+            for (String s : ImmutableList.of(none, leftOnly, rightOnly, full)) {
+                if (expressionsEqual(s, full)) {
+                    return s;
+                }
+            }
+            throw new AssertionError("bad formatted expression: " + full);
+        }
+
+        private String formatTernaryExpression(String firstOperator, String secondOperator, Expression firstNode, Expression secondNode, Expression thirdNode, Void context)
+        {
+            String first = process(firstNode, context);
+            String second = process(secondNode, context);
+            String third = process(thirdNode, context);
+
+            String full = String.format("(%s) %s (%s) %s (%s)", first, firstOperator, second, secondOperator, third);
+
+            String firstSecond = String.format("(%s) %s (%s) %s %s", first, firstOperator, second, secondOperator, third);
+            String firstThird = String.format("(%s) %s %s %s (%s)", first, firstOperator, second, secondOperator, third);
+            String secondThird = String.format("%s %s (%s) %s (%s)", first, firstOperator, second, secondOperator, third);
+
+            String firstOnly = String.format("(%s) %s %s %s %s", first, firstOperator, second, secondOperator, third);
+            String secondOnly = String.format("%s %s (%s) %s %s", first, firstOperator, second, secondOperator, third);
+            String thirdOnly = String.format("%s %s %s %s (%s)", first, firstOperator, second, secondOperator, third);
+
+            String none = String.format("%s %s %s %s %s", first, firstOperator, second, secondOperator, third);
+
+            ImmutableList<String> list = ImmutableList.of(
+                    none,
+                    firstOnly, secondOnly, thirdOnly,
+                    firstSecond, firstThird, secondThird,
+                    full);
+
+            for (String s : list) {
+                if (expressionsEqual(s, full)) {
+                    return s;
+                }
+            }
+            throw new AssertionError("bad formatted expression: " + full);
+        }
+
+        private static boolean expressionsEqual(String a, String b)
+        {
+            return parseExpression(a).equals(parseExpression(b));
+        }
+
+        private static Expression parseExpression(String sql)
+        {
+            try {
+                return createExpression(sql);
+            }
+            catch (ParsingException e) {
+                System.err.println(e);
+                System.err.println(sql);
+                System.err.println();
+                throw new RuntimeException();
+            }
+        }
+
         private static String formatIdentifier(String s)
         {
-            // TODO: handle escaping properly
-            return '"' + s + '"';
+            s = s.replace("\"", "\"\"");
+            return isValidIdentifier(s) ? s : ('"' + s + '"');
+        }
+
+        private static boolean isValidIdentifier(String s)
+        {
+            try {
+                return createExpression(s) instanceof QualifiedNameReference;
+            }
+            catch (ParsingException e) {
+                return false;
+            }
         }
     }
 }

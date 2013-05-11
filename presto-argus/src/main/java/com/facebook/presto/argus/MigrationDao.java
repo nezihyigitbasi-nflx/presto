@@ -23,6 +23,7 @@ public abstract class MigrationDao
             "WHERE version = 2\n" +
             "  AND connection_id = 1075\n" +
             "  AND report_id NOT IN (SELECT report_id FROM presto_migrations)\n" +
+//            "  AND report_id = 147590\n" +
             "ORDER BY views DESC")
     @Mapper(ReportMapper.class)
     public abstract List<Report> getReports();
@@ -30,11 +31,13 @@ public abstract class MigrationDao
     @SqlUpdate("" +
             "UPDATE reports SET\n" +
             "  connection_id = 96\n" +
+            ", sql_query = :updatedSql\n" +
             "WHERE report_id = :reportId\n" +
             "  AND sql_query = :originalSql")
     protected abstract int updateReport(
             @Bind("reportId") long reportId,
-            @Bind("originalSql") String originalSql);
+            @Bind("originalSql") String originalSql,
+            @Bind("updatedSql") String updatedSql);
 
     @SqlUpdate("" +
             "REPLACE INTO presto_migrations SET\n" +
@@ -66,6 +69,7 @@ public abstract class MigrationDao
             boolean migrate,
             long reportId,
             String originalSql,
+            String updatedSql,
             boolean resultsMatch,
             String peregrineState,
             String prestoState,
@@ -76,7 +80,7 @@ public abstract class MigrationDao
     {
         boolean migrated = false;
         if (migrate) {
-            int updated = updateReport(reportId, originalSql);
+            int updated = updateReport(reportId, originalSql, updatedSql);
             if (updated > 1) {
                 throw new RuntimeException("too many rows updated: " + updated);
             }

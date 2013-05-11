@@ -15,7 +15,7 @@
  *  limitations under the License.
  */
 
-grammar Statement;
+grammar PeregrineStatement;
 
 options {
     output = AST;
@@ -63,16 +63,6 @@ tokens {
     SHOW_COLUMNS;
     SHOW_PARTITIONS;
     SHOW_FUNCTIONS;
-    CREATE_TABLE;
-    CREATE_MATERIALIZED_VIEW;
-    REFRESH_MATERIALIZED_VIEW;
-    VIEW_REFRESH;
-    CREATE_ALIAS;
-    DROP_ALIAS;
-    DROP_TABLE;
-    TABLE_ELEMENT_LIST;
-    COLUMN_DEF;
-    NOT_NULL;
 }
 
 @header {
@@ -101,12 +91,6 @@ tokens {
     @Override
     public String getErrorMessage(RecognitionException e, String[] tokenNames)
     {
-        if (e.token.getType() == BACKQUOTED_IDENT) {
-            return "backquoted identifiers are not supported; use double quotes to quote identifiers";
-        }
-        if (e.token.getType() == DIGIT_IDENT) {
-            return "identifiers must not start with a digit; surround the identifier with double quotes";
-        }
         return super.getErrorMessage(e, tokenNames);
     }
 }
@@ -144,12 +128,6 @@ statement
     | showColumnsStmt
     | showPartitionsStmt
     | showFunctionsStmt
-    | createTableStmt
-    | dropTableStmt
-    | createMaterializedViewStmt
-    | refreshMaterializedViewStmt
-    | createAliasStmt
-    | dropAliasStmt
     ;
 
 selectStmt
@@ -391,15 +369,14 @@ specialFunction
     | CURRENT_TIMESTAMP ('(' integer ')')?         -> ^(CURRENT_TIMESTAMP integer?)
     | SUBSTRING '(' expr FROM expr (FOR expr)? ')' -> ^(FUNCTION_CALL ^(QNAME IDENT["substr"]) expr expr expr?)
     | EXTRACT '(' ident FROM expr ')'              -> ^(EXTRACT ident expr)
-    | CAST '(' expr AS type ')'                    -> ^(CAST expr IDENT[$type.text])
+    | CAST '(' expr AS type ')'                    -> ^(CAST expr type)
     ;
 
-// TODO: this should be 'dataType', which supports arbitrary type specifications. For now we constrain to simple types
 type
-    : VARCHAR
-    | BIGINT
-    | DOUBLE
-    | BOOLEAN
+    : 'STRING'  -> IDENT["varchar"]
+    | 'BIGINT'  -> IDENT["bigint"]
+    | 'DOUBLE'  -> IDENT["double"]
+    | 'BOOLEAN' -> IDENT["boolean"]
     ;
 
 caseExpression
@@ -478,96 +455,15 @@ showFunctionsStmt
     : SHOW FUNCTIONS -> SHOW_FUNCTIONS
     ;
 
-dropTableStmt
-    : DROP TABLE qname -> ^(DROP_TABLE qname)
-    ;
-
-createMaterializedViewStmt
-    : CREATE MATERIALIZED VIEW qname refresh=viewRefresh? AS restrictedSelectStmt -> ^(CREATE_MATERIALIZED_VIEW qname $refresh? restrictedSelectStmt)
-    ;
-
-refreshMaterializedViewStmt
-    : REFRESH MATERIALIZED VIEW qname -> ^(REFRESH_MATERIALIZED_VIEW qname)
-    ;
-
-viewRefresh
-    : REFRESH r=integer -> ^(REFRESH $r)
-    ;
-
-createAliasStmt
-    : CREATE ALIAS qname forRemote -> ^(CREATE_ALIAS qname forRemote)
-    ;
-
-dropAliasStmt
-    : DROP ALIAS qname -> ^(DROP_ALIAS qname)
-    ;
-
-forRemote
-    : FOR qname -> ^(FOR qname)
-    ;
-
-createTableStmt
-    : CREATE TABLE qname tableElementList -> ^(CREATE_TABLE qname tableElementList)
-    ;
-
-tableElementList
-    : '(' tableElement (',' tableElement)* ')' -> ^(TABLE_ELEMENT_LIST tableElement+)
-    ;
-
-tableElement
-    : ident dataType columnConstDef* -> ^(COLUMN_DEF ident dataType columnConstDef*)
-    ;
-
-dataType
-    : charType
-    | exactNumType
-    | dateType
-    ;
-
-charType
-    : CHAR charlen?              -> ^(CHAR charlen?)
-    | CHARACTER charlen?         -> ^(CHAR charlen?)
-    | VARCHAR charlen?           -> ^(VARCHAR charlen?)
-    | CHAR VARYING charlen?      -> ^(VARCHAR charlen?)
-    | CHARACTER VARYING charlen? -> ^(VARCHAR charlen?)
-    ;
-
-charlen
-    : '(' integer ')' -> integer
-    ;
-
-exactNumType
-    : NUMERIC numlen? -> ^(NUMERIC numlen?)
-    | DECIMAL numlen? -> ^(NUMERIC numlen?)
-    | DEC numlen?     -> ^(NUMERIC numlen?)
-    | INTEGER         -> ^(INTEGER)
-    | INT             -> ^(INTEGER)
-    ;
-
-numlen
-    : '(' p=integer (',' s=integer)? ')' -> $p $s?
-    ;
-
-dateType
-    : DATE -> ^(DATE)
-    ;
-
-columnConstDef
-    : columnConst -> ^(CONSTRAINT columnConst)
-    ;
-
-columnConst
-    : NOT NULL -> NOT_NULL
-    ;
-
 qname
     : ident ('.' ident)* -> ^(QNAME ident+)
     ;
 
 ident
     : IDENT
-    | QUOTED_IDENT
     | nonReserved  -> IDENT[$nonReserved.text]
+    | BAD_IDENT
+    | BACKQUOTED_IDENT
     ;
 
 number
@@ -589,6 +485,8 @@ nonReserved
     | OVER | PARTITION | RANGE | ROWS | PRECEDING | FOLLOWING | CURRENT | ROW
     | REFRESH | MATERIALIZED | VIEW | ALIAS
     | YEAR | MONTH | DAY | HOUR | MINUTE | SECOND
+    | DATE | TIME | TIMESTAMP
+    | NULLS
     ;
 
 SELECT: 'SELECT';
@@ -666,19 +564,6 @@ WITH: 'WITH';
 RECURSIVE: 'RECURSIVE';
 CREATE: 'CREATE';
 TABLE: 'TABLE';
-CHAR: 'CHAR';
-CHARACTER: 'CHARACTER';
-VARYING: 'VARYING';
-VARCHAR: 'VARCHAR';
-NUMERIC: 'NUMERIC';
-NUMBER: 'NUMBER';
-DECIMAL: 'DECIMAL';
-DEC: 'DEC';
-INTEGER: 'INTEGER';
-INT: 'INT';
-DOUBLE: 'DOUBLE';
-BIGINT: 'BIGINT';
-BOOLEAN: 'BOOLEAN';
 CONSTRAINT: 'CONSTRAINT';
 DESCRIBE: 'DESCRIBE';
 CAST: 'CAST';
@@ -703,8 +588,10 @@ GTE : '>=';
 SEMICOLON: ';';
 
 STRING
-    : '\'' ( ~'\'' | '\'\'' )* '\''
-        { setText(getText().substring(1, getText().length() - 1).replace("''", "'")); }
+    : '\'' ( ~( '\'' | '\\' ) | '\\\'' | '\\\\' )* '\''
+        { setText(getText().substring(1, getText().length() - 1).replace("\\'", "'").replace("\\\\", "\\")); }
+    | '"' ( ~( '\"' | '\\' ) | '\\"' | '\\\\' )* '"'
+        { setText(getText().substring(1, getText().length() - 1).replace("\\\"", "\"").replace("\\\\", "\\")); }
     ;
 
 INTEGER_VALUE
@@ -722,13 +609,8 @@ IDENT
     : (LETTER | '_') (LETTER | DIGIT | '_' | '\@')*
     ;
 
-DIGIT_IDENT
-    : DIGIT (LETTER | DIGIT | '_' | '\@')+
-    ;
-
-QUOTED_IDENT
-    : '"' ( ~'"' | '""' )* '"'
-        { setText(getText().substring(1, getText().length() - 1).replace("\"\"", "\"")); }
+BAD_IDENT
+    : (LETTER | DIGIT | '_' | '$') (LETTER | DIGIT | '_' | '\@' | ':' | '$')*
     ;
 
 BACKQUOTED_IDENT

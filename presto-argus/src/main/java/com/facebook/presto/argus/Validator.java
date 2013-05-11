@@ -2,8 +2,6 @@ package com.facebook.presto.argus;
 
 import com.facebook.presto.argus.peregrine.PeregrineErrorCode;
 import com.facebook.presto.argus.peregrine.PeregrineException;
-import com.facebook.presto.sql.parser.ParsingException;
-import com.facebook.presto.sql.parser.StatementSplitter;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedMultiset;
@@ -24,7 +22,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import static com.facebook.presto.sql.parser.SqlParser.createStatement;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
@@ -74,7 +71,6 @@ public class Validator
     public boolean valid()
     {
         return canPeregrineExecute() &&
-                canPrestoParse() &&
                 canPrestoExecute() &&
                 compareResults();
     }
@@ -197,7 +193,7 @@ public class Validator
     {
         try (PeregrineRunner runner = new PeregrineRunner(TIME_LIMIT)) {
             long start = System.nanoTime();
-            peregrineResults = runner.execute(username, report.getNamespace(), report.getCleanQuery());
+            peregrineResults = runner.execute(username, report.getNamespace(), report.getRunnablePeregrineQuery());
             peregrineState = PeregrineState.SUCCESS;
             peregrineTime = nanosSince(start);
             return true;
@@ -220,24 +216,10 @@ public class Validator
         return false;
     }
 
-    private boolean canPrestoParse()
-    {
-        String sql = report.getCleanQuery();
-        try {
-            createStatement(lexQuery(sql));
-            return true;
-        }
-        catch (ParsingException | IllegalArgumentException e) {
-            prestoException = e;
-            prestoState = PrestoState.INVALID;
-            return false;
-        }
-    }
-
     private boolean canPrestoExecute()
     {
         String url = format("jdbc:presto://%s/", prestoGateway);
-        String sql = lexQuery(report.getCleanQuery());
+        String sql = report.getRunnablePrestoQuery();
 
         try (Connection connection = DriverManager.getConnection(url, username, null)) {
             connection.setCatalog("prism");
@@ -303,18 +285,6 @@ public class Validator
             rows.add(unmodifiableList(row));
         }
         return rows.build();
-    }
-
-    private static String lexQuery(String sql)
-    {
-        StatementSplitter splitter = new StatementSplitter(sql);
-        if (splitter.getCompleteStatements().size() > 1) {
-            throw new IllegalArgumentException("multiple statements", null);
-        }
-        if (splitter.getCompleteStatements().size() == 1) {
-            return splitter.getCompleteStatements().get(0);
-        }
-        return splitter.getPartialStatement();
     }
 
     private static Comparator<List<Object>> rowComparator()
