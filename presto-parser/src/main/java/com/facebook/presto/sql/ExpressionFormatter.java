@@ -232,7 +232,7 @@ public final class ExpressionFormatter
         @Override
         protected String visitLogicalBinaryExpression(LogicalBinaryExpression node, Void context)
         {
-            return formatBinaryExpression(node.getType().toString(), node.getLeft(), node.getRight(), context);
+            return formatBinaryExpression("\n  " + node.getType().toString(), node.getLeft(), node.getRight(), context);
         }
 
         @Override

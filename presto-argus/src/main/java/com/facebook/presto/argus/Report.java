@@ -33,7 +33,7 @@ public class Report
         this.variables = checkNotNull(variables, "variables is null");
         this.views = views;
 
-        String sql = removePeregrineSettings(query);
+        String sql = removePeregrineSettings(removeTrailingTerminator(query));
         String translated = translateQuery(sql);
         this.runnablePeregrineQuery = cleanQuery(sql, variables);
         this.translatedPrestoQuery = translated;
@@ -103,6 +103,15 @@ public class Report
         return sb.toString();
     }
 
+    private static String removeTrailingTerminator(String sql)
+    {
+        sql = sql.trim();
+        if (sql.endsWith(";")) {
+            sql = sql.substring(0, sql.length() - 1);
+        }
+        return sql;
+    }
+
     private static String removePeregrineSettings(String sql)
     {
         sql = sql.replaceFirst("(?i)^WITH\\s+\\d+\\s+AS\\s+mapper.buffersize\\s+", "");
@@ -120,11 +129,6 @@ public class Report
 
     private static String translateQuery(String sql)
     {
-        sql = sql.trim();
-        if (sql.endsWith(";")) {
-            sql = sql.substring(0, sql.length() - 1);
-        }
-
         Statement statement;
         try {
             statement = PeregrineSqlParser.createStatement(sql);
