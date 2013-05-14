@@ -40,8 +40,7 @@ public final class ReportTsvLoader
             String namespace = iter.next();
             String query = unescape(iter.next());
             Map<String, String> variables = parseVariables(unescape(iter.next()));
-            long views = Long.parseLong(iter.next());
-            reports.add(new Report(reportId, namespace, query, variables, views));
+            reports.add(new Report(reportId, namespace, query, variables));
         }
         return reports.build();
     }

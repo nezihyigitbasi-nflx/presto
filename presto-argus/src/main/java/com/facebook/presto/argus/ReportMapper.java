@@ -18,7 +18,7 @@ public class ReportMapper
                 rs.getLong("report_id"),
                 rs.getString("namespace"),
                 rs.getString("sql_query"),
-                ImmutableMap.<String, String>of(),
-                rs.getLong("views"));
+                ImmutableMap.<String, String>of()
+        );
     }
 }

@@ -12,7 +12,7 @@ import java.util.List;
 public abstract class MigrationDao
 {
     @SqlQuery("" +
-            "SELECT report_id, namespace, sql_query, coalesce(views, 0) views\n" +
+            "SELECT report_id, namespace, sql_query\n" +
             "FROM reports\n" +
             "LEFT JOIN (\n" +
             "  SELECT report_id, sum(views) views\n" +
@@ -23,7 +23,6 @@ public abstract class MigrationDao
             "WHERE version = 2\n" +
             "  AND connection_id = 1075\n" +
             "  AND report_id NOT IN (SELECT report_id FROM presto_migrations)\n" +
-//            "  AND report_id = 147590\n" +
             "ORDER BY views DESC")
     @Mapper(ReportMapper.class)
     public abstract List<Report> getReports();

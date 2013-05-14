@@ -32,20 +32,9 @@ public class ArgusConverter
     public void run(MigrationManager manager)
             throws InterruptedException
     {
-        ExecutorService executor = newFixedThreadPool(1);
+        ExecutorService executor = newFixedThreadPool(10);
         CompletionService<Validator> completionService = new ExecutorCompletionService<>(executor);
         List<Report> reports = manager.getReports();
-
-        for (Report report : reports) {
-            System.out.println("Report ID: " + report.getReportId());
-            System.out.println("Peregrine SQL:\n" + report.getRunnablePeregrineQuery());
-            System.out.println();
-            System.out.println("Presto SQL:\n" + report.getRunnablePrestoQuery());
-            System.out.println("----------");
-        }
-        if (true) {
-            return;
-        }
 
         for (Report report : reports) {
             Validator validator = new Validator(TEST_USER, PRESTO_GATEWAY, report);
@@ -73,6 +62,9 @@ public class ArgusConverter
             println("Peregrine State: " + validator.getPeregrineState());
             println("Presto State: " + validator.getPrestoState());
             println("Results Match: " + validator.resultsMatch());
+            if (validator.resultsMatch()) {
+                println("Row Count: " + validator.getPeregrineResults().size());
+            }
 
             String comparison = validator.getResultsComparison().trim();
             if (!comparison.isEmpty()) {
@@ -84,33 +76,26 @@ public class ArgusConverter
             }
             if (validator.getPrestoException() != null) {
                 println("Presto Exception: " + validator.getPrestoException());
-                println("Peregrine SQL:\n" + report.getRunnablePeregrineQuery());
-                println("Presto SQL:\n" + report.getRunnablePrestoQuery());
+                printSql(validator);
             }
-            else if ((validator.getPeregrineState() == PeregrineState.SUCCESS) && (!validator.resultsMatch())) {
-                println("Peregrine SQL:\n" + report.getRunnablePeregrineQuery());
-                println("Presto SQL:\n" + report.getRunnablePrestoQuery());
+            else if (((validator.getPeregrineState() == PeregrineState.SUCCESS) && (!validator.resultsMatch())) ||
+                    (validator.resultsMatch() && (!validator.getRunnablePeregrineQuery().equals(validator.getRunnablePrestoQuery())))) {
+                printSql(validator);
             }
 
-            if (validator.resultsMatch()) {
-                println("Peregrine SQL:\n" + report.getRunnablePeregrineQuery());
-                println("Presto SQL:\n" + report.getRunnablePrestoQuery());
-            }
-            else {
-                try {
-                    if (manager.migrateReport(report, validator, validator.resultsMatch())) {
-                        migrated++;
-                        println("Migrated: true");
-                    }
-                    else {
-                        println("Migrated: false");
-                    }
+            try {
+                if (manager.migrateReport(report, validator, validator.resultsMatch())) {
+                    migrated++;
+                    println("Migrated: true");
                 }
-                catch (RuntimeException e) {
+                else {
                     println("Migrated: false");
-                    println("Migration Exception: " + e);
-                    printStackTrace(e);
                 }
+            }
+            catch (RuntimeException e) {
+                println("Migrated: false");
+                println("Migration Exception: " + e);
+                printStackTrace(e);
             }
 
             if ((validator.getPrestoException() != null) && (validator.getPrestoState() == PrestoState.FAILED)) {
@@ -130,6 +115,26 @@ public class ArgusConverter
     {
         System.out.println(s);
         logFile.println(s);
+    }
+
+    private void printSql(Validator validator)
+    {
+        if (validator.getRunnablePeregrineQuery() == null) {
+            return;
+        }
+
+        println("");
+        if (validator.getRunnablePrestoQuery() == null) {
+            println("Peregrine SQL:\n" + validator.getRunnablePeregrineQuery());
+        }
+        else if (validator.getRunnablePeregrineQuery().equals(validator.getRunnablePrestoQuery())) {
+            println("SQL:\n" + validator.getRunnablePeregrineQuery());
+        }
+        else {
+            println("Peregrine SQL:\n" + validator.getRunnablePeregrineQuery());
+            println("");
+            println("Presto SQL:\n" + validator.getRunnablePrestoQuery());
+        }
     }
 
     private static void printStackTrace(Throwable t)

@@ -2,7 +2,9 @@ package com.facebook.presto.argus;
 
 import com.facebook.presto.argus.peregrine.PeregrineErrorCode;
 import com.facebook.presto.argus.peregrine.PeregrineException;
-import com.google.common.base.Objects;
+import com.facebook.presto.sql.SqlFormatter;
+import com.facebook.presto.sql.parser.ParsingException;
+import com.facebook.presto.sql.parser.PeregrineSqlParser;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedMultiset;
 import com.google.common.collect.Multiset;
@@ -52,6 +54,10 @@ public class Validator
     private PrestoState prestoState = PrestoState.UNKNOWN;
     private boolean resultsMatch;
 
+    private String runnablePeregrineQuery;
+    private String translatedPrestoQuery;
+    private String runnablePrestoQuery;
+
     private Exception peregrineException;
     private Exception prestoException;
 
@@ -95,6 +101,21 @@ public class Validator
         return resultsMatch;
     }
 
+    public String getRunnablePeregrineQuery()
+    {
+        return runnablePeregrineQuery;
+    }
+
+    public String getTranslatedPrestoQuery()
+    {
+        return translatedPrestoQuery;
+    }
+
+    public String getRunnablePrestoQuery()
+    {
+        return runnablePrestoQuery;
+    }
+
     public Exception getPeregrineException()
     {
         return peregrineException;
@@ -125,26 +146,6 @@ public class Validator
     {
         checkState(prestoResults != null);
         return prestoResults;
-    }
-
-    @Override
-    public String toString()
-    {
-        return Objects.toStringHelper(this)
-                .add("username", username)
-                .add("prestoGateway", prestoGateway)
-                .add("report", report)
-                .add("peregrineState", peregrineState)
-                .add("prestoState", prestoState)
-                .add("resultsMatch", resultsMatch)
-                .add("peregrineException", peregrineException)
-                .add("prestoException", prestoException)
-                .add("peregrineTime", peregrineTime)
-                .add("prestoTime", prestoTime)
-                .add("peregrineResults", peregrineResults)
-                .add("prestoResults", prestoResults)
-                .omitNullValues()
-                .toString();
     }
 
     public String getResultsComparison()
@@ -191,9 +192,17 @@ public class Validator
 
     private boolean canPeregrineExecute()
     {
+        CleanedQuery cleaned = new CleanedQuery(report.getNamespace(), report.getQuery(), report.getVariables());
+        if (!cleaned.isValid()) {
+            peregrineState = PeregrineState.INVALID;
+            peregrineException = cleaned.getException();
+            return false;
+        }
+        this.runnablePeregrineQuery = cleaned.getQuery();
+
         try (PeregrineRunner runner = new PeregrineRunner(TIME_LIMIT)) {
             long start = System.nanoTime();
-            peregrineResults = runner.execute(username, report.getNamespace(), report.getRunnablePeregrineQuery());
+            peregrineResults = runner.execute(username, report.getNamespace(), runnablePeregrineQuery);
             peregrineState = PeregrineState.SUCCESS;
             peregrineTime = nanosSince(start);
             return true;
@@ -218,8 +227,25 @@ public class Validator
 
     private boolean canPrestoExecute()
     {
+        return canPrestoExecute(report.getQuery()) ||
+                canPrestoExecute(translateQuery(report.getQuery()));
+    }
+
+    private boolean canPrestoExecute(String sql)
+    {
+        translatedPrestoQuery = sql;
+        prestoState = PrestoState.UNKNOWN;
+        prestoException = null;
+
+        CleanedQuery cleaned = new CleanedQuery(report.getNamespace(), sql, report.getVariables());
+        if (!cleaned.isValid()) {
+            prestoState = PrestoState.INVALID;
+            prestoException = cleaned.getException();
+            return false;
+        }
+        runnablePrestoQuery = cleaned.getQuery();
+
         String url = format("jdbc:presto://%s/", prestoGateway);
-        String sql = report.getRunnablePrestoQuery();
 
         try (Connection connection = DriverManager.getConnection(url, username, null)) {
             connection.setCatalog("prism");
@@ -227,7 +253,7 @@ public class Validator
             long start = System.nanoTime();
 
             try (Statement statement = connection.createStatement();
-                    ResultSet resultSet = statement.executeQuery(sql)) {
+                    ResultSet resultSet = statement.executeQuery(runnablePrestoQuery)) {
                 prestoResults = convertJdbcResultSet(resultSet);
                 prestoState = PrestoState.SUCCESS;
                 prestoTime = nanosSince(start);
@@ -259,6 +285,9 @@ public class Validator
     {
         for (Throwable t = e.getCause(); t != null; t = t.getCause()) {
             if (t.toString().contains(".SemanticException:")) {
+                return true;
+            }
+            if (t.toString().contains(".ParsingException:")) {
                 return true;
             }
             if (nullToEmpty(t.getMessage()).matches("Function .* not registered")) {
@@ -324,5 +353,15 @@ public class Validator
                 return ((Comparable<Object>) a).compareTo(b);
             }
         };
+    }
+
+    private static String translateQuery(String sql)
+    {
+        try {
+            return SqlFormatter.formatSql(PeregrineSqlParser.createStatement(sql));
+        }
+        catch (ParsingException e) {
+            return sql;
+        }
     }
 }

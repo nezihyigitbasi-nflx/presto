@@ -28,7 +28,7 @@ public class MigrationManager
                 migrate,
                 report.getReportId(),
                 report.getOriginalQuery(),
-                report.getTranslatedPrestoQuery(),
+                validator.getTranslatedPrestoQuery(),
                 validator.resultsMatch(),
                 toString(validator.getPeregrineState()),
                 toString(validator.getPrestoState()),
