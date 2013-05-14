@@ -339,7 +339,7 @@ public final class ExpressionFormatter
             }
             parts.add("END");
 
-            return Joiner.on(' ').join(parts.build());
+            return Joiner.on("\n    ").join(parts.build());
         }
 
         @Override
@@ -359,7 +359,7 @@ public final class ExpressionFormatter
             }
             parts.add("END");
 
-            return Joiner.on(' ').join(parts.build());
+            return Joiner.on("\n    ").join(parts.build());
         }
 
         @Override
