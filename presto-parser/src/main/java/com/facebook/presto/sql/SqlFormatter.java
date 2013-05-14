@@ -131,7 +131,7 @@ public final class SqlFormatter
             }
 
             if (!node.getOrderBy().isEmpty()) {
-                append(indent, "ORDER BY ");
+                append(indent, "ORDER BY");
                 appendList(indent, node.getOrderBy(), orderByFormatterFunction());
             }
 
