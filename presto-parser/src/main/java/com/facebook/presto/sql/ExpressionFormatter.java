@@ -209,6 +209,10 @@ public final class ExpressionFormatter
         @Override
         protected String visitFunctionCall(FunctionCall node, Void context)
         {
+            if (node.getName().toString().toLowerCase().equals("concat") && (node.getArguments().size() == 2)) {
+                return formatBinaryExpression("||", node.getArguments().get(0), node.getArguments().get(1), context);
+            }
+
             StringBuilder builder = new StringBuilder();
 
             String arguments = joinExpressions(node.getArguments());
@@ -329,17 +333,16 @@ public final class ExpressionFormatter
         protected String visitSearchedCaseExpression(SearchedCaseExpression node, Void context)
         {
             ImmutableList.Builder<String> parts = ImmutableList.builder();
+
             parts.add("CASE");
             for (WhenClause whenClause : node.getWhenClauses()) {
                 parts.add(process(whenClause, context));
             }
             if (node.getDefaultValue() != null) {
-                parts.add("ELSE")
-                        .add(process(node.getDefaultValue(), context));
+                parts.add("ELSE " + process(node.getDefaultValue(), context));
             }
-            parts.add("END");
 
-            return Joiner.on("\n    ").join(parts.build());
+            return Joiner.on("\n    ").join(parts.build()) + "\n  END";
         }
 
         @Override
@@ -347,19 +350,15 @@ public final class ExpressionFormatter
         {
             ImmutableList.Builder<String> parts = ImmutableList.builder();
 
-            parts.add("CASE")
-                    .add(process(node.getOperand(), context));
-
+            parts.add("CASE " + process(node.getOperand(), context));
             for (WhenClause whenClause : node.getWhenClauses()) {
                 parts.add(process(whenClause, context));
             }
             if (node.getDefaultValue() != null) {
-                parts.add("ELSE")
-                        .add(process(node.getDefaultValue(), context));
+                parts.add("ELSE " + process(node.getDefaultValue(), context));
             }
-            parts.add("END");
 
-            return Joiner.on("\n    ").join(parts.build());
+            return Joiner.on("\n    ").join(parts.build()) + "\n  END";
         }
 
         @Override

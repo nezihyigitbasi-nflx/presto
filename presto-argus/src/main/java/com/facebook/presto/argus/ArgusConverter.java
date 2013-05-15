@@ -135,6 +135,7 @@ public class ArgusConverter
             println("");
             println("Presto SQL:\n" + validator.getRunnablePrestoQuery());
         }
+        println("");
     }
 
     private static void printStackTrace(Throwable t)
