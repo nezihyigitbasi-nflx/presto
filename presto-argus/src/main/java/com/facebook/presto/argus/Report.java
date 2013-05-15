@@ -49,8 +49,8 @@ public class Report
     private static String removeTrailingTerminator(String sql)
     {
         sql = sql.trim();
-        if (sql.endsWith(";")) {
-            sql = sql.substring(0, sql.length() - 1);
+        while (sql.endsWith(";")) {
+            sql = sql.substring(0, sql.length() - 1).trim();
         }
         return sql;
     }
