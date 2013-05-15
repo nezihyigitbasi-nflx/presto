@@ -2,9 +2,6 @@ package com.facebook.presto.argus;
 
 import com.facebook.presto.argus.peregrine.PeregrineErrorCode;
 import com.facebook.presto.argus.peregrine.PeregrineException;
-import com.facebook.presto.sql.SqlFormatter;
-import com.facebook.presto.sql.parser.ParsingException;
-import com.facebook.presto.sql.parser.PeregrineSqlParser;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedMultiset;
 import com.google.common.collect.Multiset;
@@ -228,7 +225,7 @@ public class Validator
     private boolean canPrestoExecute()
     {
         return canPrestoExecute(report.getQuery()) ||
-                canPrestoExecute(translateQuery(report.getQuery()));
+                canPrestoExecute(QueryTranslator.translateQuery(report.getQuery()));
     }
 
     private boolean canPrestoExecute(String sql)
@@ -353,15 +350,5 @@ public class Validator
                 return ((Comparable<Object>) a).compareTo(b);
             }
         };
-    }
-
-    private static String translateQuery(String sql)
-    {
-        try {
-            return SqlFormatter.formatSql(PeregrineSqlParser.createStatement(sql));
-        }
-        catch (ParsingException e) {
-            return sql;
-        }
     }
 }
