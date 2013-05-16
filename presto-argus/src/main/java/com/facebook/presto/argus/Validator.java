@@ -290,6 +290,9 @@ public class Validator
             if (nullToEmpty(t.getMessage()).matches("Function .* not registered")) {
                 return true;
             }
+            if (t.toString().contains(" is offline: Offlined by Prism (moved to ")) {
+                return true;
+            }
         }
         return false;
     }
