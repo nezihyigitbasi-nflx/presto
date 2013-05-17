@@ -306,11 +306,7 @@ public class Validator
         while (resultSet.next()) {
             List<Object> row = new ArrayList<>();
             for (int i = 1; i <= columnCount; i++) {
-                Object value = resultSet.getObject(i);
-                if (value instanceof Integer) {
-                    value = ((Integer) value).longValue();
-                }
-                row.add(value);
+                row.add(resultSet.getObject(i));
             }
             rows.add(unmodifiableList(row));
         }
