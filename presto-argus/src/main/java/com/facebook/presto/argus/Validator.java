@@ -245,6 +245,7 @@ public class Validator
         String url = format("jdbc:presto://%s/", prestoGateway);
 
         try (Connection connection = DriverManager.getConnection(url, username, null)) {
+            connection.setClientInfo("ApplicationName", "argus-test");
             connection.setCatalog("prism");
             connection.setSchema(report.getNamespace());
             long start = System.nanoTime();
