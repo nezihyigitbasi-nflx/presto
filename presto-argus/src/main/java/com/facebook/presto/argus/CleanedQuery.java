@@ -150,6 +150,7 @@ public class CleanedQuery
 
     private static String replaceVariables(String sql, Map<String, String> variables)
     {
+        sql = sql.replace("'$date_picker$'", "'" + date().print(new DateTime().minusDays(1)) + "'");
         for (Map.Entry<String, String> entry : variables.entrySet()) {
             sql = sql.replace("$" + entry.getKey() + "$", entry.getValue());
         }

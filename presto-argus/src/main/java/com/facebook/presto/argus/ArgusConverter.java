@@ -19,6 +19,7 @@ import static java.util.concurrent.Executors.newFixedThreadPool;
 
 public class ArgusConverter
 {
+    public static final int THREADS = Integer.valueOf(System.getProperty("threadCount", "10"));
     public static final String TEST_USER = "argus-test";
     public static final HostAndPort PRESTO_GATEWAY = HostAndPort.fromString("10.78.138.47:8081");
 
@@ -32,7 +33,7 @@ public class ArgusConverter
     public void run(MigrationManager manager)
             throws InterruptedException
     {
-        ExecutorService executor = newFixedThreadPool(10);
+        ExecutorService executor = newFixedThreadPool(THREADS);
         CompletionService<Validator> completionService = new ExecutorCompletionService<>(executor);
         List<Report> reports = manager.getReports();
 
