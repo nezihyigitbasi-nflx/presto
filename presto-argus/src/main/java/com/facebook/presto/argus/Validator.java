@@ -4,6 +4,7 @@ import com.facebook.presto.argus.peregrine.PeregrineErrorCode;
 import com.facebook.presto.argus.peregrine.PeregrineException;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedMultiset;
+import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.Ordering;
 import com.google.common.net.HostAndPort;
@@ -13,12 +14,14 @@ import io.airlift.units.Duration;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -60,6 +63,9 @@ public class Validator
 
     private Duration peregrineTime;
     private Duration prestoTime;
+
+    private List<String> peregrineColumns;
+    private List<String> prestoColumns;
 
     private List<List<Object>> peregrineResults;
     private List<List<Object>> prestoResults;
@@ -133,6 +139,18 @@ public class Validator
         return prestoTime;
     }
 
+    public List<String> getPeregrineColumns()
+    {
+        checkState(peregrineColumns != null);
+        return peregrineColumns;
+    }
+
+    public List<String> getPrestoColumns()
+    {
+        checkState(prestoColumns != null);
+        return prestoColumns;
+    }
+
     public List<List<Object>> getPeregrineResults()
     {
         checkState(peregrineResults != null);
@@ -149,6 +167,13 @@ public class Validator
     {
         if (resultsMatch || (peregrineResults == null) || (prestoResults == null)) {
             return "";
+        }
+
+        Set<String> peregrineColumnSet = ImmutableSortedSet.copyOf(peregrineColumns);
+        Set<String> prestoColumnSet = ImmutableSortedSet.copyOf(prestoColumns);
+        if (!peregrineColumnSet.equals(prestoColumnSet) || (peregrineColumnSet.size() != peregrineColumns.size())) {
+            return "PeregrineColumns: " + peregrineColumnSet + "\n" +
+                    "PrestoColumns: " + prestoColumnSet + "\n";
         }
 
         Multiset<List<Object>> peregrine = ImmutableSortedMultiset.copyOf(rowComparator(), getPeregrineResults());
@@ -181,6 +206,17 @@ public class Validator
 
     private boolean compareResults()
     {
+        if (peregrineColumns.size() != prestoColumns.size()) {
+            return false;
+        }
+
+        Set<String> peregrineColumnSet = ImmutableSortedSet.copyOf(peregrineColumns);
+        Set<String> prestoColumnSet = ImmutableSortedSet.copyOf(prestoColumns);
+        if (peregrineColumnSet.equals(prestoColumnSet) && (peregrineColumnSet.size() == peregrineColumns.size())) {
+            peregrineResults = normalizeColumnOrder(peregrineResults, peregrineColumns, peregrineColumnSet);
+            prestoResults = normalizeColumnOrder(prestoResults, prestoColumns, prestoColumnSet);
+        }
+
         Multiset<List<Object>> peregrine = ImmutableSortedMultiset.copyOf(rowComparator(), getPeregrineResults());
         Multiset<List<Object>> presto = ImmutableSortedMultiset.copyOf(rowComparator(), getPrestoResults());
         resultsMatch = peregrine.equals(presto);
@@ -199,7 +235,9 @@ public class Validator
 
         try (PeregrineRunner runner = new PeregrineRunner(TIME_LIMIT)) {
             long start = System.nanoTime();
-            peregrineResults = runner.execute(username, report.getNamespace(), runnablePeregrineQuery);
+            PeregrineRunner.Results results = runner.execute(username, report.getNamespace(), runnablePeregrineQuery);
+            peregrineColumns = results.getColumns();
+            peregrineResults = results.getRows();
             peregrineState = PeregrineState.SUCCESS;
             peregrineTime = nanosSince(start);
             return true;
@@ -252,6 +290,7 @@ public class Validator
 
             try (Statement statement = connection.createStatement();
                     ResultSet resultSet = statement.executeQuery(runnablePrestoQuery)) {
+                prestoColumns = getJdbcColumnLabels(resultSet);
                 prestoResults = convertJdbcResultSet(resultSet);
                 prestoState = PrestoState.SUCCESS;
                 prestoTime = nanosSince(start);
@@ -296,6 +335,17 @@ public class Validator
             }
         }
         return false;
+    }
+
+    private static List<String> getJdbcColumnLabels(ResultSet resultSet)
+            throws SQLException
+    {
+        ImmutableList.Builder<String> columns = ImmutableList.builder();
+        ResultSetMetaData metadata = resultSet.getMetaData();
+        for (int i = 1; i <= metadata.getColumnCount(); i++) {
+            columns.add(metadata.getColumnLabel(i));
+        }
+        return columns.build();
     }
 
     private static List<List<Object>> convertJdbcResultSet(ResultSet resultSet)
@@ -350,5 +400,30 @@ public class Validator
                 return ((Comparable<Object>) a).compareTo(b);
             }
         };
+    }
+
+    private static List<List<Object>> normalizeColumnOrder(List<List<Object>> rows, List<String> columns, Set<String> columnSet)
+    {
+        List<Integer> columnIndex = buildColumnIndex(columns, columnSet);
+        ImmutableList.Builder<List<Object>> out = ImmutableList.builder();
+        for (List<Object> row : rows) {
+            checkArgument(row.size() == columnIndex.size());
+            List<Object> newRow = new ArrayList<>();
+            for (int index : columnIndex) {
+                newRow.add(row.get(index));
+            }
+            out.add(unmodifiableList(newRow));
+        }
+        return out.build();
+    }
+
+    private static List<Integer> buildColumnIndex(List<String> columns, Set<String> columnSet)
+    {
+        checkArgument(columns.size() == columnSet.size());
+        ImmutableList.Builder<Integer> index = ImmutableList.builder();
+        for (String column : columnSet) {
+            index.add(columns.indexOf(column));
+        }
+        return index.build();
     }
 }

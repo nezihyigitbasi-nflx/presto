@@ -67,7 +67,7 @@ public class PeregrineRunner
         timeLimiterExecutor.shutdownNow();
     }
 
-    public List<List<Object>> execute(String username, String namespace, String sql)
+    public Results execute(String username, String namespace, String sql)
             throws PeregrineException
     {
         PrismNamespace ns;
@@ -113,7 +113,7 @@ public class PeregrineRunner
         return timeLimiter.newProxy(client, PeregrineClient.class, (long) timeLimit.toMillis(), MILLISECONDS);
     }
 
-    private static List<List<Object>> peregrineResults(QueryResult result)
+    private static Results peregrineResults(QueryResult result)
             throws PeregrineException
     {
         List<Function<String, Object>> types = new ArrayList<>();
@@ -138,7 +138,7 @@ public class PeregrineRunner
             rows.add(unmodifiableList(row));
         }
 
-        return rows.build();
+        return new Results(result.getHeaders(), rows.build());
     }
 
     private static Function<String, Object> typeConversionFunction(String type)
@@ -184,6 +184,28 @@ public class PeregrineRunner
                         return s.equals("null") ? null : s;
                     }
                 };
+        }
+    }
+
+    public static class Results
+    {
+        private final List<String> columns;
+        private final List<List<Object>> rows;
+
+        public Results(List<String> columns, List<List<Object>> rows)
+        {
+            this.columns = checkNotNull(columns, "columns is null");
+            this.rows = checkNotNull(rows, "rows is null");
+        }
+
+        public List<String> getColumns()
+        {
+            return columns;
+        }
+
+        public List<List<Object>> getRows()
+        {
+            return rows;
         }
     }
 }
