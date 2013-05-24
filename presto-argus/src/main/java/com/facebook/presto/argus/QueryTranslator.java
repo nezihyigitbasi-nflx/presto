@@ -12,6 +12,7 @@ import com.facebook.presto.sql.tree.Node;
 import com.facebook.presto.sql.tree.NodeRewriter;
 import com.facebook.presto.sql.tree.QualifiedName;
 import com.facebook.presto.sql.tree.Statement;
+import com.facebook.presto.sql.tree.StringLiteral;
 import com.facebook.presto.sql.tree.TreeRewriter;
 import com.google.common.base.Function;
 import com.google.common.collect.FluentIterable;
@@ -21,6 +22,8 @@ import java.util.List;
 
 public final class QueryTranslator
 {
+    private static final StringLiteral DEFAULT_DATE_FORMAT = new StringLiteral("%Y-%m-%d %H:%i:%s");
+
     private QueryTranslator() {}
 
     public static String translateQuery(String sql)
@@ -110,12 +113,35 @@ public final class QueryTranslator
                 return rewriteConcat(args);
             }
 
+            if (name.equals("strftime")) {
+                if (args.size() == 1) {
+                    args = ImmutableList.of(args.get(0), DEFAULT_DATE_FORMAT);
+                }
+                else if ((args.size() == 2) && (args.get(1) instanceof StringLiteral)) {
+                    String format = ((StringLiteral) args.get(1)).getValue();
+                    format = format.replace("%M", "%i");
+                    args = ImmutableList.of(args.get(0), new StringLiteral(format));
+                }
+                return functionCall("date_format", node, args);
+            }
+            if (name.equals("strptime")) {
+                if (args.size() == 1) {
+                    args = ImmutableList.of(args.get(0), DEFAULT_DATE_FORMAT);
+                }
+                return functionCall("date_parse", node, args);
+            }
+
             return treeRewriter.defaultRewrite(node, context);
         }
 
         private static FunctionCall functionCall(String name, FunctionCall node)
         {
             return new FunctionCall(QualifiedName.of(name), node.getWindow().orNull(), node.isDistinct(), node.getArguments());
+        }
+
+        private static FunctionCall functionCall(String name, FunctionCall node, List<Expression> args)
+        {
+            return new FunctionCall(QualifiedName.of(name), node.getWindow().orNull(), node.isDistinct(), args);
         }
     }
 

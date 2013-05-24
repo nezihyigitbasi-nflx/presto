@@ -12,7 +12,7 @@ import java.util.List;
 public abstract class MigrationDao
 {
     @SqlQuery("" +
-            "SELECT report_id, namespace, sql_query\n" +
+            "SELECT report_id, namespace, sql_query, settings\n" +
             "FROM reports\n" +
             "LEFT JOIN (\n" +
             "  SELECT report_id, sum(views) views\n" +
@@ -20,8 +20,7 @@ public abstract class MigrationDao
             "  WHERE from_unixtime(datetime) >= CURRENT_DATE - INTERVAL 30 DAY\n" +
             "  GROUP BY report_id\n" +
             ") v USING (report_id)\n" +
-            "WHERE version = 2\n" +
-            "  AND connection_id = 1075\n" +
+            "WHERE connection_id = 1075\n" +
             "  AND report_id NOT IN (SELECT report_id FROM presto_migrations)\n" +
             "ORDER BY views DESC")
     @Mapper(ReportMapper.class)
