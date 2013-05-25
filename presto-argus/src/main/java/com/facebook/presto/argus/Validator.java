@@ -163,6 +163,11 @@ public class Validator
         return prestoResults;
     }
 
+    public void forceQueryTranslation()
+    {
+        translatedPrestoQuery = QueryTranslator.translateQuery(report.getQuery());
+    }
+
     public String getResultsComparison()
     {
         if (resultsMatch || (peregrineResults == null) || (prestoResults == null)) {

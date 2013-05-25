@@ -84,8 +84,17 @@ public class ArgusConverter
                 printSql(validator);
             }
 
+            boolean migrate = false;
+            if (validator.resultsMatch()) {
+                migrate = true;
+            }
+            else if (validator.getPeregrineState() == PeregrineState.INVALID) {
+                migrate = true;
+                validator.forceQueryTranslation();
+            }
+
             try {
-                if (manager.migrateReport(report, validator, validator.resultsMatch())) {
+                if (manager.migrateReport(report, validator, migrate)) {
                     migrated++;
                     println("Migrated: true");
                 }
