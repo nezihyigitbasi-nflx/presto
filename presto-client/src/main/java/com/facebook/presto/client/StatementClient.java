@@ -43,7 +43,6 @@ public class StatementClient
             Objects.firstNonNull(StatementClient.class.getPackage().getImplementationVersion(), "unknown");
 
     private final HttpClient httpClient;
-    private final AsyncHttpClient asyncHttpClient;
     private final FullJsonResponseHandler<QueryResults> responseHandler;
     private final boolean debug;
     private final String query;
@@ -54,19 +53,17 @@ public class StatementClient
 
     public StatementClient(AsyncHttpClient httpClient, JsonCodec<QueryResults> queryResultsCodec, ClientSession session, String query)
     {
-        this(httpClient, httpClient, queryResultsCodec, session, query);
+        this((HttpClient) httpClient, queryResultsCodec, session, query);
     }
 
-    public StatementClient(HttpClient httpClient, AsyncHttpClient asyncHttpClient, JsonCodec<QueryResults> queryResultsCodec, ClientSession session, String query)
+    public StatementClient(HttpClient httpClient, JsonCodec<QueryResults> queryResultsCodec, ClientSession session, String query)
     {
         checkNotNull(httpClient, "httpClient is null");
-        checkNotNull(asyncHttpClient, "asyncHttpClient is null");
         checkNotNull(queryResultsCodec, "queryResultsCodec is null");
         checkNotNull(session, "session is null");
         checkNotNull(query, "query is null");
 
         this.httpClient = httpClient;
-        this.asyncHttpClient = asyncHttpClient;
         this.responseHandler = createFullJsonResponseHandler(queryResultsCodec);
         this.debug = session.isDebug();
         this.query = query;
@@ -218,7 +215,7 @@ public class StatementClient
                         .setHeader(USER_AGENT, USER_AGENT_VALUE)
                         .setUri(uri)
                         .build();
-                asyncHttpClient.executeAsync(request, createStatusResponseHandler());
+                httpClient.execute(request, createStatusResponseHandler());
             }
         }
     }

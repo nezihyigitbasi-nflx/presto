@@ -27,7 +27,6 @@ public class QueryExecutor
 {
     private final JsonCodec<QueryResults> queryInfoCodec;
     private final HttpClient httpClient;
-    private final AsyncHttpClient asyncHttpClient;
 
     private QueryExecutor(String userAgent, JsonCodec<QueryResults> queryResultsCodec)
     {
@@ -40,23 +39,17 @@ public class QueryExecutor
 
         this.queryInfoCodec = queryResultsCodec;
         this.httpClient = new ApacheHttpClient(config, filters);
-        this.asyncHttpClient = new StandaloneNettyAsyncHttpClient("jdbc",
-                config,
-                new NettyAsyncHttpClientConfig(),
-                new NettyIoPoolConfig(),
-                filters);
     }
 
     public StatementClient startQuery(ClientSession session, String query)
     {
-        return new StatementClient(httpClient, asyncHttpClient, queryInfoCodec, session, query);
+        return new StatementClient(httpClient, queryInfoCodec, session, query);
     }
 
     @Override
     public void close()
     {
         httpClient.close();
-        asyncHttpClient.close();
     }
 
     public static QueryExecutor create(String userAgent)
