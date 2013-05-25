@@ -35,6 +35,7 @@ import static java.util.Collections.unmodifiableList;
 public class Validator
 {
     private static final Duration TIME_LIMIT = new Duration(1, TimeUnit.MINUTES);
+    private static final PeregrineRunner PEREGRINE_RUNNER = new PeregrineRunner(TIME_LIMIT);
 
     public enum PeregrineState
     {
@@ -238,9 +239,9 @@ public class Validator
         }
         this.runnablePeregrineQuery = cleaned.getQuery();
 
-        try (PeregrineRunner runner = new PeregrineRunner(TIME_LIMIT)) {
+        try {
             long start = System.nanoTime();
-            PeregrineRunner.Results results = runner.execute(username, report.getNamespace(), runnablePeregrineQuery);
+            PeregrineRunner.Results results = PEREGRINE_RUNNER.execute(username, report.getNamespace(), runnablePeregrineQuery);
             peregrineColumns = results.getColumns();
             peregrineResults = results.getRows();
             peregrineState = PeregrineState.SUCCESS;
