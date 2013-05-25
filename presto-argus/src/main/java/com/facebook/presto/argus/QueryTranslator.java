@@ -1,7 +1,6 @@
 package com.facebook.presto.argus;
 
 import com.facebook.presto.sql.SqlFormatter;
-import com.facebook.presto.sql.parser.ParsingException;
 import com.facebook.presto.sql.parser.PeregrineSqlParser;
 import com.facebook.presto.sql.tree.ArithmeticExpression;
 import com.facebook.presto.sql.tree.Cast;
@@ -28,17 +27,15 @@ public final class QueryTranslator
 
     public static String translateQuery(String sql)
     {
-        Statement statement;
         try {
-            statement = PeregrineSqlParser.createStatement(sql);
+            Statement statement = PeregrineSqlParser.createStatement(sql);
+            statement = TreeRewriter.rewriteWith(new Rewriter(), statement);
+            return SqlFormatter.formatSql(statement);
         }
-        catch (ParsingException e) {
+        catch (RuntimeException e) {
+            System.err.println(e);
             return sql;
         }
-
-        statement = TreeRewriter.rewriteWith(new Rewriter(), statement);
-
-        return SqlFormatter.formatSql(statement);
     }
 
     private static class Rewriter
