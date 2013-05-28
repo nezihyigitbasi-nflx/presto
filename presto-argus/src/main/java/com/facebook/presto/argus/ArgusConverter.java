@@ -30,7 +30,7 @@ public class ArgusConverter
         this.logFile = logFile;
     }
 
-    public void run(MigrationManager manager)
+    public void run(MigrationManager manager, PeregrineRunner peregrineRunner)
             throws InterruptedException
     {
         ExecutorService executor = newFixedThreadPool(THREADS);
@@ -38,7 +38,7 @@ public class ArgusConverter
         List<Report> reports = manager.getReports();
 
         for (Report report : reports) {
-            Validator validator = new Validator(TEST_USER, PRESTO_GATEWAY, report);
+            Validator validator = new Validator(peregrineRunner, TEST_USER, PRESTO_GATEWAY, report);
             completionService.submit(validateTask(validator), validator);
         }
         executor.shutdown();

@@ -22,7 +22,6 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -34,9 +33,6 @@ import static java.util.Collections.unmodifiableList;
 
 public class Validator
 {
-    private static final Duration TIME_LIMIT = new Duration(1, TimeUnit.MINUTES);
-    private static final PeregrineRunner PEREGRINE_RUNNER = new PeregrineRunner(TIME_LIMIT);
-
     public enum PeregrineState
     {
         UNKNOWN, TIMEOUT, INVALID, MEMORY, FAILED, SUCCESS
@@ -47,6 +43,7 @@ public class Validator
         UNKNOWN, TIMEOUT, INVALID, FAILED, SUCCESS
     }
 
+    private final PeregrineRunner peregrineRunner;
     private final String username;
     private final HostAndPort prestoGateway;
     private final Report report;
@@ -71,8 +68,9 @@ public class Validator
     private List<List<Object>> peregrineResults;
     private List<List<Object>> prestoResults;
 
-    public Validator(String username, HostAndPort prestoGateway, Report report)
+    public Validator(PeregrineRunner peregrineRunner, String username, HostAndPort prestoGateway, Report report)
     {
+        this.peregrineRunner = checkNotNull(peregrineRunner, "peregrineRunner is null");
         this.username = checkNotNull(username, "username is null");
         this.prestoGateway = checkNotNull(prestoGateway, "prestoGateway is null");
         this.report = checkNotNull(report, "report is null");
@@ -241,7 +239,7 @@ public class Validator
 
         try {
             long start = System.nanoTime();
-            PeregrineRunner.Results results = PEREGRINE_RUNNER.execute(username, report.getNamespace(), runnablePeregrineQuery);
+            PeregrineRunner.Results results = peregrineRunner.execute(username, report.getNamespace(), runnablePeregrineQuery);
             peregrineColumns = results.getColumns();
             peregrineResults = results.getRows();
             peregrineState = PeregrineState.SUCCESS;
