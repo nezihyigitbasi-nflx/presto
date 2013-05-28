@@ -33,6 +33,8 @@ import static java.util.Collections.unmodifiableList;
 
 public class Validator
 {
+    private static final int MAX_ATTEMPTS = 5;
+
     public enum PeregrineState
     {
         UNKNOWN, TIMEOUT, INVALID, MEMORY, FAILED, SUCCESS
@@ -55,6 +57,8 @@ public class Validator
     private String runnablePeregrineQuery;
     private String translatedPrestoQuery;
     private String runnablePrestoQuery;
+
+    private List<PeregrineState> peregrineAttemptList;
 
     private Exception peregrineException;
     private Exception prestoException;
@@ -116,6 +120,11 @@ public class Validator
     public String getRunnablePrestoQuery()
     {
         return runnablePrestoQuery;
+    }
+
+    public List<PeregrineState> getPeregrineAttempts()
+    {
+        return ImmutableList.copyOf(peregrineAttemptList);
     }
 
     public Exception getPeregrineException()
@@ -228,6 +237,22 @@ public class Validator
     }
 
     private boolean canPeregrineExecute()
+    {
+        peregrineAttemptList = new ArrayList<>();
+        for (int i = 0; i < MAX_ATTEMPTS; i++) {
+            boolean success = peregrineExecute();
+            peregrineAttemptList.add(peregrineState);
+            if (success) {
+                return true;
+            }
+            if (peregrineState == PeregrineState.INVALID) {
+                return false;
+            }
+        }
+        return false;
+    }
+
+    private boolean peregrineExecute()
     {
         CleanedQuery cleaned = new CleanedQuery(report.getNamespace(), report.getQuery(), report.getVariables());
         if (!cleaned.isValid()) {

@@ -60,6 +60,7 @@ public class ArgusConverter
                 valid++;
             }
 
+            println("Peregrine Attempts: " + validator.getPeregrineAttempts());
             println("Peregrine State: " + validator.getPeregrineState());
             println("Presto State: " + validator.getPrestoState());
             println("Results Match: " + validator.resultsMatch());
