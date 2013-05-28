@@ -161,7 +161,7 @@ public final class SqlFormatter
         @Override
         protected Void visitTable(Table node, Integer indent)
         {
-            builder.append(node.getName().toString());
+            builder.append(node.getName().toString().replace(":", "@"));
             return null;
         }
 
