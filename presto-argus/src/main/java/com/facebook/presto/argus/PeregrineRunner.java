@@ -114,9 +114,20 @@ public class PeregrineRunner
     }
 
     private PeregrineClient createClient(PrismNamespace ns)
+            throws PeregrineException
     {
-        PeregrineClient client = clientFactory.create(ns.getPeregrineGateway());
-        return timeLimiter.newProxy(client, PeregrineClient.class, (long) timeLimit.toMillis(), MILLISECONDS);
+        return timeLimiter.newProxy(createRawClient(ns), PeregrineClient.class, (long) timeLimit.toMillis(), MILLISECONDS);
+    }
+
+    private PeregrineClient createRawClient(PrismNamespace ns)
+            throws PeregrineException
+    {
+        try {
+            return clientFactory.create(ns.getPeregrineGateway());
+        }
+        catch (RuntimeException e) {
+            throw new PeregrineException(e.getMessage(), PeregrineErrorCode.UNKNOWN);
+        }
     }
 
     private static Results peregrineResults(QueryResult result)

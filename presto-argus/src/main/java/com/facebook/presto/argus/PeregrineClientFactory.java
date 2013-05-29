@@ -21,6 +21,7 @@ import com.facebook.swift.smc.SmcUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.net.HostAndPort;
+import io.airlift.units.Duration;
 import org.apache.thrift.TException;
 
 import java.io.Closeable;
@@ -28,12 +29,17 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import static com.facebook.swift.service.ThriftClientManager.DEFAULT_NAME;
+import static java.lang.String.format;
 
 public class PeregrineClientFactory
         implements Closeable
 {
+    private final Duration connectTimeout;
     private final ThriftClientManager clientManager;
     private final SmcClientProvider smcClientProvider;
     private final PrismServiceClientProvider prismServiceClientProvider;
@@ -41,6 +47,8 @@ public class PeregrineClientFactory
 
     public PeregrineClientFactory(ThriftClientConfig config)
     {
+        this.connectTimeout = config.getConnectTimeout();
+
         this.clientManager = new ThriftClientManager();
 
         this.smcClientProvider = new SmcClientProvider(
@@ -77,7 +85,8 @@ public class PeregrineClientFactory
         Throwable lastException = null;
         for (HostAndPort service : shuffle(services)) {
             try {
-                return peregrineThriftClient.open(new FramedClientConnector(service)).get();
+                Future<PeregrineClient> client = peregrineThriftClient.open(new FramedClientConnector(service));
+                return client.get((long) connectTimeout.toMillis(), TimeUnit.MILLISECONDS);
             }
             catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -86,8 +95,11 @@ public class PeregrineClientFactory
             catch (ExecutionException e) {
                 lastException = e.getCause();
             }
+            catch (TimeoutException e) {
+                lastException = e;
+            }
         }
-        throw new RuntimeException("Unable to connect to any Peregrine gateway: " + peregrineSmcTier, lastException);
+        throw new RuntimeException(format("Unable to connect to any Peregrine gateway: %s %s", peregrineSmcTier, services), lastException);
     }
 
     @Override

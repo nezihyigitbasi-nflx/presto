@@ -13,7 +13,7 @@ import static java.lang.System.currentTimeMillis;
 
 public final class Main
 {
-    public static final String LOG_FILE = format("%s/tmp/argus-report.%s.txt", System.getProperty("user.home"), currentTimeMillis());
+    public static final String LOG_FILE = format("%s/tmp/argus/argus-report.%s.txt", System.getProperty("user.home"), currentTimeMillis());
     public static final Duration TIME_LIMIT = new Duration(2, TimeUnit.MINUTES);
 
     private Main() {}
@@ -23,6 +23,7 @@ public final class Main
     {
         LoggingUtil.initializeLogging(false);
 
+        System.out.println("Log File: " + LOG_FILE);
         try (PrintWriter logFile = new PrintWriter(new FileOutputStream(LOG_FILE));
                 PeregrineRunner peregrineRunner = new PeregrineRunner(TIME_LIMIT)) {
             IDBI dbi = new DBI(System.getProperty("argusDatabase"));
