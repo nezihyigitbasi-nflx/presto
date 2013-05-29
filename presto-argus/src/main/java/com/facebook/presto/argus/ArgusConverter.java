@@ -37,6 +37,9 @@ public class ArgusConverter
         CompletionService<Validator> completionService = new ExecutorCompletionService<>(executor);
         List<Report> reports = manager.getReports();
 
+        println("Reports: " + reports.size());
+        println("----------");
+
         for (Report report : reports) {
             Validator validator = new Validator(peregrineRunner, TEST_USER, PRESTO_GATEWAY, report);
             completionService.submit(validateTask(validator), validator);
@@ -114,11 +117,8 @@ public class ArgusConverter
             }
 
             println("----------");
-
-            if ((total % 5) == 0) {
-                println(format("Progress: %s / %s / %s / %s", valid, migrated, total, reports.size()));
-                println("----------");
-            }
+            println(format("Progress: %s / %s / %s / %s", valid, migrated, total, reports.size()));
+            println("----------");
         }
     }
 
