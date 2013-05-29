@@ -29,6 +29,7 @@ import java.util.concurrent.Executors;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static io.airlift.units.Duration.nanosSince;
+import static java.lang.Boolean.parseBoolean;
 import static java.lang.Double.NEGATIVE_INFINITY;
 import static java.lang.Double.NaN;
 import static java.lang.Double.POSITIVE_INFINITY;
@@ -190,6 +191,18 @@ public class PeregrineRunner
                                 return NEGATIVE_INFINITY;
                         }
                         return parseDouble(s);
+                    }
+                };
+            case "boolean":
+                return new Function<String, Object>()
+                {
+                    @Override
+                    public Object apply(String s)
+                    {
+                        if (s.equals("null")) {
+                            return null;
+                        }
+                        return parseBoolean(s) ? 1 : 0;
                     }
                 };
             default:
