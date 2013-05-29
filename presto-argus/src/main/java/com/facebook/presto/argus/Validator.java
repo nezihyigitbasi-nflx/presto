@@ -7,6 +7,7 @@ import com.google.common.collect.ImmutableSortedMultiset;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.Ordering;
+import com.google.common.math.DoubleMath;
 import com.google.common.net.HostAndPort;
 import com.google.common.util.concurrent.UncheckedTimeoutException;
 import io.airlift.units.Duration;
@@ -203,7 +204,7 @@ public class Validator
                 i++;
                 List<Object> peregrineRow = peregrineIter.next();
                 List<Object> prestoRow = prestoIter.next();
-                if (!peregrineRow.equals(prestoRow)) {
+                if (rowComparator().compare(peregrineRow, prestoRow) != 0) {
                     sb.append(format("%s: %s: %s %s%n", i,
                             peregrineRow.equals(prestoRow),
                             peregrineRow, prestoRow));
@@ -425,10 +426,19 @@ public class Validator
             public int compare(Object a, Object b)
             {
                 if (a.getClass() != b.getClass()) {
-                    return -1;
+                    if ((a instanceof Number) && (b instanceof Number)) {
+                        return compare(((Number) a).doubleValue(), ((Number) b).doubleValue());
+                    }
+                    if ((a instanceof String) || (b instanceof String)) {
+                        return a.toString().compareTo(b.toString());
+                    }
+                    throw new IllegalArgumentException(format("%s != %s", a.getClass().getName(), b.getClass().getName()));
                 }
                 if (!(a instanceof Comparable)) {
-                    return -1;
+                    throw new IllegalArgumentException(a.getClass().getName());
+                }
+                if (a instanceof Double) {
+                    return DoubleMath.fuzzyCompare((double) a, (double) b, 0.00000001);
                 }
                 return ((Comparable<Object>) a).compareTo(b);
             }
