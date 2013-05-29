@@ -89,7 +89,7 @@ public class ArgusConverter
             if (validator.resultsMatch()) {
                 migrate = true;
             }
-            else if (validator.getPeregrineState() != PeregrineState.SUCCESS) {
+            else if ((validator.getPeregrineState() != PeregrineState.UNKNOWN) && (validator.getPeregrineState() != PeregrineState.SUCCESS)) {
                 migrate = true;
                 validator.forceQueryTranslation();
             }

@@ -280,6 +280,9 @@ public class Validator
             else if (e.getCode() == PeregrineErrorCode.OUT_OF_MEMORY) {
                 peregrineState = PeregrineState.MEMORY;
             }
+            else if (e.getCode() == PeregrineErrorCode.UNKNOWN) {
+                peregrineState = PeregrineState.UNKNOWN;
+            }
             else {
                 peregrineState = PeregrineState.FAILED;
             }

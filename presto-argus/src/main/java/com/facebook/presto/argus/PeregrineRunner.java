@@ -79,11 +79,17 @@ public class PeregrineRunner
         }
 
         try (PeregrineClient client = createClient(ns)) {
-            QueryId queryId = client.submitQuery(new UnparsedQuery(
-                    username,
-                    "WITH true AS mode.exact " + sql,
-                    ImmutableList.<String>of(),
-                    ns.getHiveDatabaseName()));
+            QueryId queryId;
+            try {
+                queryId = client.submitQuery(new UnparsedQuery(
+                        username,
+                        "WITH true AS mode.exact " + sql,
+                        ImmutableList.<String>of(),
+                        ns.getHiveDatabaseName()));
+            }
+            catch (RuntimeTTransportException e) {
+                throw new PeregrineException("failed to submit query", PeregrineErrorCode.UNKNOWN);
+            }
 
             long start = nanoTime();
             QueryResponse response;
