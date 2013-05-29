@@ -260,8 +260,9 @@ public class Validator
             peregrineException = cleaned.getException();
             return false;
         }
-        this.runnablePeregrineQuery = cleaned.getQuery();
+        runnablePeregrineQuery = cleaned.getQuery();
 
+        peregrineException = null;
         try {
             long start = System.nanoTime();
             PeregrineRunner.Results results = peregrineRunner.execute(username, report.getNamespace(), runnablePeregrineQuery);
