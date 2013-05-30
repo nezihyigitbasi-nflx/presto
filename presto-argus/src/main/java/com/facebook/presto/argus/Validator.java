@@ -438,7 +438,7 @@ public class Validator
                     throw new IllegalArgumentException(a.getClass().getName());
                 }
                 if (a instanceof Double) {
-                    return DoubleMath.fuzzyCompare((double) a, (double) b, 0.00000001);
+                    return DoubleMath.fuzzyCompare((double) a, (double) b, 0.0001);
                 }
                 return ((Comparable<Object>) a).compareTo(b);
             }
