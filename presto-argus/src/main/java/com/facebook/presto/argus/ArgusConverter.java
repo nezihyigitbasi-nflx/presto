@@ -1,5 +1,9 @@
 package com.facebook.presto.argus;
 
+import com.facebook.presto.sql.parser.ParsingException;
+import com.facebook.presto.sql.parser.SqlParser;
+import com.facebook.presto.sql.tree.Query;
+import com.facebook.presto.sql.tree.Statement;
 import com.google.common.base.Throwables;
 import com.google.common.net.HostAndPort;
 
@@ -92,7 +96,7 @@ public class ArgusConverter
             if (validator.resultsMatch()) {
                 migrate = true;
             }
-            else if ((validator.getPeregrineState() != PeregrineState.UNKNOWN) && (validator.getPeregrineState() != PeregrineState.SUCCESS)) {
+            else if (shouldForceMigrate(validator)) {
                 migrate = true;
                 validator.forceQueryTranslation();
             }
@@ -147,6 +151,34 @@ public class ArgusConverter
             println("Presto SQL:\n" + validator.getRunnablePrestoQuery());
         }
         println("");
+    }
+
+    private static boolean shouldForceMigrate(Validator validator)
+    {
+        if ((validator.getPeregrineState() != PeregrineState.UNKNOWN) && (validator.getPeregrineState() != PeregrineState.SUCCESS)) {
+            return true;
+        }
+        if ((validator.getPrestoState() == PrestoState.SUCCESS) && !validator.resultsMatch()) {
+            if (isPureLimitQuery(validator.getTranslatedPrestoQuery())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean isPureLimitQuery(String sql)
+    {
+        try {
+            Statement statement = SqlParser.createStatement(sql);
+            if (!(statement instanceof Query)) {
+                return false;
+            }
+            Query query = (Query) statement;
+            return query.getLimit().isPresent() && query.getOrderBy().isEmpty();
+        }
+        catch (ParsingException e) {
+            return false;
+        }
     }
 
     private static void printStackTrace(Throwable t)
