@@ -246,7 +246,7 @@ public class Validator
             if (success) {
                 return true;
             }
-            if (peregrineState == PeregrineState.INVALID) {
+            if ((peregrineState == PeregrineState.INVALID) || (peregrineState == PeregrineState.MEMORY)) {
                 return false;
             }
         }
@@ -349,6 +349,7 @@ public class Validator
                 message.endsWith(" is offline and can not be queried") ||
                 message.equals("This query is touching too much data!!!") ||
                 message.equals("WITH_ONLY queries can not be executed") ||
+                message.startsWith("wrong column count ") ||
                 message.startsWith("Partition predicate not specified for any key");
     }
 

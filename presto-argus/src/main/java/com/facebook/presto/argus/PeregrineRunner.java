@@ -89,7 +89,7 @@ public class PeregrineRunner
                         ns.getHiveDatabaseName()));
             }
             catch (RuntimeTTransportException e) {
-                throw new PeregrineException("failed to submit query", PeregrineErrorCode.UNKNOWN);
+                throw new PeregrineException("failed to submit query", PeregrineErrorCode.TIMED_OUT);
             }
 
             long start = nanoTime();
