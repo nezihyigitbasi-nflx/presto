@@ -370,7 +370,7 @@ public final class ExpressionFormatter
         @Override
         protected String visitBetweenPredicate(BetweenPredicate node, Void context)
         {
-            return formatTernaryExpression("BETWEEN", "AND", node.getValue(), node.getMax(), node.getMax(), context);
+            return formatTernaryExpression("BETWEEN", "AND", node.getValue(), node.getMin(), node.getMax(), context);
         }
 
         @Override
