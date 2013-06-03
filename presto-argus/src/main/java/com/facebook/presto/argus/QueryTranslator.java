@@ -128,6 +128,21 @@ public final class QueryTranslator
                 return functionCall("date_parse", node, args);
             }
 
+            if (name.equals("rlike")) {
+                if ((args.size() == 2) && (args.get(1) instanceof StringLiteral)) {
+                    String regex = ((StringLiteral) args.get(1)).getValue();
+                    if ((!regex.startsWith(".*")) && (!regex.startsWith("^"))) {
+                        regex = "^" + regex;
+                    }
+                    if ((!regex.endsWith(".*")) && (!regex.endsWith("$"))) {
+                        regex += "$";
+                    }
+                    args = ImmutableList.of(args.get(0), new StringLiteral(regex));
+                    return functionCall("regexp_like", node, args);
+                }
+                return treeRewriter.defaultRewrite(node, context);
+            }
+
             return treeRewriter.defaultRewrite(node, context);
         }
 

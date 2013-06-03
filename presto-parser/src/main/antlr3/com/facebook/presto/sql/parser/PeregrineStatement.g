@@ -271,6 +271,8 @@ predicate
       | NOT BETWEEN min=predicatePrimary AND max=predicatePrimary -> ^(NOT ^(BETWEEN $predicate $min $max))
       | LIKE e=predicatePrimary (ESCAPE x=predicatePrimary)?      -> ^(LIKE $predicate $e $x?)
       | NOT LIKE e=predicatePrimary (ESCAPE x=predicatePrimary)?  -> ^(NOT ^(LIKE $predicate $e $x?))
+      | RLIKE e=predicatePrimary                                  -> ^(FUNCTION_CALL ^(QNAME IDENT["rlike"]) $predicate $e)
+      | NOT RLIKE e=predicatePrimary                              -> ^(NOT ^(FUNCTION_CALL ^(QNAME IDENT["rlike"]) $predicate $e))
       | IS NULL                                                   -> ^(IS_NULL $predicate)
       | IS NOT NULL                                               -> ^(IS_NOT_NULL $predicate)
       | IN inList                                                 -> ^(IN $predicate inList)
@@ -507,6 +509,7 @@ NOT: 'NOT';
 EXISTS: 'EXISTS';
 BETWEEN: 'BETWEEN';
 LIKE: 'LIKE';
+RLIKE: 'RLIKE';
 IS: 'IS';
 NULL: 'NULL';
 TRUE: 'TRUE';
