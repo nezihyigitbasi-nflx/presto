@@ -196,6 +196,7 @@ public class Validator
 
         sb.append(format("Peregrine %s rows, Presto %s rows%n", peregrine.size(), presto.size()));
         if (peregrine.size() == presto.size()) {
+            sb.append(format("Columns: %s%n", peregrineColumnSet));
             Iterator<List<Object>> peregrineIter = peregrine.iterator();
             Iterator<List<Object>> prestoIter = presto.iterator();
             int i = 0;
