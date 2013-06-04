@@ -465,7 +465,7 @@ public class Validator
 
     private static int fuzzyCompare(double a, double b)
     {
-        return DoubleMath.fuzzyCompare(normalizeDouble(a), normalizeDouble(b), 0.0001);
+        return DoubleMath.fuzzyCompare(normalizeDouble(a), normalizeDouble(b), 0.01);
     }
 
     private static int compareNull(Object a, Object b)
