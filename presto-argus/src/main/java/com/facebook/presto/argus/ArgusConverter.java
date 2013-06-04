@@ -2,9 +2,14 @@ package com.facebook.presto.argus;
 
 import com.facebook.presto.sql.parser.ParsingException;
 import com.facebook.presto.sql.parser.SqlParser;
+import com.facebook.presto.sql.tree.Expression;
+import com.facebook.presto.sql.tree.FunctionCall;
+import com.facebook.presto.sql.tree.QualifiedName;
 import com.facebook.presto.sql.tree.Query;
+import com.facebook.presto.sql.tree.SortItem;
 import com.facebook.presto.sql.tree.Statement;
 import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableList;
 import com.google.common.net.HostAndPort;
 
 import java.io.PrintWriter;
@@ -159,14 +164,14 @@ public class ArgusConverter
             return true;
         }
         if ((validator.getPrestoState() == PrestoState.SUCCESS) && !validator.resultsMatch()) {
-            if (isPureLimitQuery(validator.getTranslatedPrestoQuery())) {
+            if (isNonDeterministicLimit(validator.getTranslatedPrestoQuery())) {
                 return true;
             }
         }
         return false;
     }
 
-    private static boolean isPureLimitQuery(String sql)
+    private static boolean isNonDeterministicLimit(String sql)
     {
         try {
             Statement statement = SqlParser.createStatement(sql);
@@ -174,7 +179,15 @@ public class ArgusConverter
                 return false;
             }
             Query query = (Query) statement;
-            return query.getLimit().isPresent() && query.getOrderBy().isEmpty();
+            if (!query.getLimit().isPresent()) {
+                return false;
+            }
+            List<SortItem> order = query.getOrderBy();
+            if (order.isEmpty()) {
+                return true;
+            }
+            Expression randFunction = new FunctionCall(QualifiedName.of("rand"), ImmutableList.<Expression>of());
+            return (order.size() == 1) && order.get(0).getSortKey().equals(randFunction);
         }
         catch (ParsingException e) {
             return false;
