@@ -442,6 +442,9 @@ public class Validator
                 if (a instanceof Double) {
                     return DoubleMath.fuzzyCompare((double) a, (double) b, 0.0001);
                 }
+                if (a instanceof Long) {
+                    return a.toString().compareTo(b.toString());
+                }
                 return ((Comparable<Object>) a).compareTo(b);
             }
         };
