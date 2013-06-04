@@ -2,9 +2,11 @@ package com.facebook.presto.argus;
 
 import com.facebook.presto.argus.peregrine.PeregrineErrorCode;
 import com.facebook.presto.argus.peregrine.PeregrineException;
+import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedMultiset;
 import com.google.common.collect.ImmutableSortedSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.SortedMultiset;
 import com.google.common.math.DoubleMath;
@@ -269,7 +271,7 @@ public class Validator
         try {
             long start = System.nanoTime();
             PeregrineRunner.Results results = peregrineRunner.execute(username, report.getNamespace(), runnablePeregrineQuery);
-            peregrineColumns = results.getColumns();
+            peregrineColumns = normalizeColumnNames(results.getColumns());
             peregrineResults = results.getRows();
             peregrineState = PeregrineState.SUCCESS;
             peregrineTime = nanosSince(start);
@@ -530,5 +532,17 @@ public class Validator
             }
         }
         return x.hasNext() == y.hasNext();
+    }
+
+    private static List<String> normalizeColumnNames(List<String> columns)
+    {
+        return ImmutableList.copyOf(Iterables.transform(columns, new Function<String, String>()
+        {
+            @Override
+            public String apply(String s)
+            {
+                return s.matches("_c\\d+") ? s.replace("c", "col") : s;
+            }
+        }));
     }
 }
