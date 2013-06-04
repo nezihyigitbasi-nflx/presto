@@ -2,12 +2,14 @@ package com.facebook.presto.argus;
 
 import com.facebook.presto.sql.parser.ParsingException;
 import com.facebook.presto.sql.parser.SqlParser;
+import com.facebook.presto.sql.tree.AllColumns;
 import com.facebook.presto.sql.tree.Expression;
 import com.facebook.presto.sql.tree.FunctionCall;
 import com.facebook.presto.sql.tree.QualifiedName;
 import com.facebook.presto.sql.tree.Query;
 import com.facebook.presto.sql.tree.SortItem;
 import com.facebook.presto.sql.tree.Statement;
+import com.facebook.presto.sql.tree.Table;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.net.HostAndPort;
@@ -167,6 +169,9 @@ public class ArgusConverter
             if (isNonDeterministicLimit(validator.getTranslatedPrestoQuery())) {
                 return true;
             }
+            if (isSelectStar(validator.getTranslatedPrestoQuery())) {
+                return true;
+            }
         }
         return false;
     }
@@ -188,6 +193,27 @@ public class ArgusConverter
             }
             Expression randFunction = new FunctionCall(QualifiedName.of("rand"), ImmutableList.<Expression>of());
             return (order.size() == 1) && order.get(0).getSortKey().equals(randFunction);
+        }
+        catch (ParsingException e) {
+            return false;
+        }
+    }
+
+    private static boolean isSelectStar(String sql)
+    {
+        try {
+            Statement statement = SqlParser.createStatement(sql);
+            if (!(statement instanceof Query)) {
+                return false;
+            }
+            Query query = (Query) statement;
+            return query.getSelect().getSelectItems().equals(ImmutableList.of(new AllColumns())) &&
+                    (query.getFrom().size() == 1) && (query.getFrom().get(0) instanceof Table) &&
+                    (!query.getWhere().isPresent()) &&
+                    query.getGroupBy().isEmpty() &&
+                    (!query.getHaving().isPresent()) &&
+                    query.getOrderBy().isEmpty() &&
+                    (!query.getLimit().isPresent());
         }
         catch (ParsingException e) {
             return false;
