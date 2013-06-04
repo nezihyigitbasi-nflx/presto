@@ -448,9 +448,18 @@ public class Validator
                 if (a instanceof Long) {
                     return a.toString().compareTo(b.toString());
                 }
+                if (a instanceof String) {
+                    return fixUnicode((String) a).compareTo(fixUnicode((String) b));
+                }
                 return ((Comparable<Object>) a).compareTo(b);
             }
         };
+    }
+
+    private static String fixUnicode(String s)
+    {
+        int i = s.indexOf('\uFFFD');
+        return (i == -1) ? s : s.substring(0, i + 1);
     }
 
     private static int fuzzyCompare(double a, double b)
