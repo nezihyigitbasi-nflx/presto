@@ -6,6 +6,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedMultiset;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Multiset;
+import com.google.common.collect.SortedMultiset;
 import com.google.common.math.DoubleMath;
 import com.google.common.net.HostAndPort;
 import com.google.common.util.concurrent.UncheckedTimeoutException;
@@ -232,9 +233,9 @@ public class Validator
             prestoResults = normalizeColumnOrder(prestoResults, prestoColumns, prestoColumnSet);
         }
 
-        Multiset<List<Object>> peregrine = ImmutableSortedMultiset.copyOf(rowComparator(), getPeregrineResults());
-        Multiset<List<Object>> presto = ImmutableSortedMultiset.copyOf(rowComparator(), getPrestoResults());
-        resultsMatch = peregrine.equals(presto);
+        SortedMultiset<List<Object>> peregrine = ImmutableSortedMultiset.copyOf(rowComparator(), getPeregrineResults());
+        SortedMultiset<List<Object>> presto = ImmutableSortedMultiset.copyOf(rowComparator(), getPrestoResults());
+        resultsMatch = sortedMultisetsEqual(peregrine, presto, rowComparator());
         return resultsMatch;
     }
 
@@ -517,5 +518,17 @@ public class Validator
             index.add(columns.indexOf(column));
         }
         return index.build();
+    }
+
+    private static <T> boolean sortedMultisetsEqual(SortedMultiset<T> a, SortedMultiset<T> b, Comparator<T> comparator)
+    {
+        Iterator<T> x = a.iterator();
+        Iterator<T> y = b.iterator();
+        while (x.hasNext() && y.hasNext()) {
+            if (comparator.compare(x.next(), y.next()) != 0) {
+                return false;
+            }
+        }
+        return x.hasNext() == y.hasNext();
     }
 }
