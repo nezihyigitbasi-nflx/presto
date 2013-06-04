@@ -443,7 +443,7 @@ public class Validator
                     throw new IllegalArgumentException(a.getClass().getName());
                 }
                 if (a instanceof Double) {
-                    return fuzzyCompare((double) a, (double) b, 0.0001);
+                    return fuzzyCompare((double) a, (double) b);
                 }
                 if (a instanceof Long) {
                     return a.toString().compareTo(b.toString());
@@ -453,9 +453,9 @@ public class Validator
         };
     }
 
-    private static int fuzzyCompare(double a, double b, double tolerance)
+    private static int fuzzyCompare(double a, double b)
     {
-        return DoubleMath.fuzzyCompare(normalizeDouble(a), normalizeDouble(b), tolerance);
+        return DoubleMath.fuzzyCompare(normalizeDouble(a), normalizeDouble(b), 0.0001);
     }
 
     private static int compareNull(Object a, Object b)
@@ -472,7 +472,7 @@ public class Validator
     private static boolean equalToNull(Object o)
     {
         if (o instanceof Number) {
-            return normalizeDouble(((Number) o).doubleValue()) == 0.0;
+            return fuzzyCompare(normalizeDouble(((Number) o).doubleValue()), 0.0) == 0;
         }
         if (o instanceof String) {
             return ((String) o).isEmpty();
