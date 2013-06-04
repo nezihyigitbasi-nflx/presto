@@ -6,7 +6,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedMultiset;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Multiset;
-import com.google.common.collect.Ordering;
 import com.google.common.math.DoubleMath;
 import com.google.common.net.HostAndPort;
 import com.google.common.util.concurrent.UncheckedTimeoutException;
@@ -28,6 +27,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.base.Strings.nullToEmpty;
+import static com.google.common.primitives.Doubles.isFinite;
 import static io.airlift.units.Duration.nanosSince;
 import static java.lang.String.format;
 import static java.util.Collections.unmodifiableList;
@@ -401,7 +401,7 @@ public class Validator
 
     private static Comparator<List<Object>> rowComparator()
     {
-        final Comparator<Object> comparator = Ordering.from(columnComparator()).nullsFirst();
+        final Comparator<Object> comparator = columnComparator();
         return new Comparator<List<Object>>()
         {
             @Override
@@ -427,6 +427,9 @@ public class Validator
             @Override
             public int compare(Object a, Object b)
             {
+                if ((a == null) || (b == null)) {
+                    return compareNull(a, b);
+                }
                 if (a.getClass() != b.getClass()) {
                     if ((a instanceof Number) && (b instanceof Number)) {
                         return compare(((Number) a).doubleValue(), ((Number) b).doubleValue());
@@ -440,7 +443,7 @@ public class Validator
                     throw new IllegalArgumentException(a.getClass().getName());
                 }
                 if (a instanceof Double) {
-                    return DoubleMath.fuzzyCompare((double) a, (double) b, 0.0001);
+                    return fuzzyCompare((double) a, (double) b, 0.0001);
                 }
                 if (a instanceof Long) {
                     return a.toString().compareTo(b.toString());
@@ -448,6 +451,38 @@ public class Validator
                 return ((Comparable<Object>) a).compareTo(b);
             }
         };
+    }
+
+    private static int fuzzyCompare(double a, double b, double tolerance)
+    {
+        return DoubleMath.fuzzyCompare(normalizeDouble(a), normalizeDouble(b), tolerance);
+    }
+
+    private static int compareNull(Object a, Object b)
+    {
+        if ((a == null) && (b == null)) {
+            return 0;
+        }
+        if (a == null) {
+            return equalToNull(b) ? 0 : -1;
+        }
+        return equalToNull(a) ? 0 : 1;
+    }
+
+    private static boolean equalToNull(Object o)
+    {
+        if (o instanceof Number) {
+            return normalizeDouble(((Number) o).doubleValue()) == 0.0;
+        }
+        if (o instanceof String) {
+            return ((String) o).isEmpty();
+        }
+        return false;
+    }
+
+    private static double normalizeDouble(double d)
+    {
+        return isFinite(d) ? d : 0.0;
     }
 
     private static List<List<Object>> normalizeColumnOrder(List<List<Object>> rows, List<String> columns, Set<String> columnSet)
