@@ -2,22 +2,28 @@ package com.facebook.presto.argus;
 
 import com.facebook.presto.sql.SqlFormatter;
 import com.facebook.presto.sql.parser.PeregrineSqlParser;
+import com.facebook.presto.sql.tree.AliasedExpression;
 import com.facebook.presto.sql.tree.ArithmeticExpression;
 import com.facebook.presto.sql.tree.Cast;
 import com.facebook.presto.sql.tree.ComparisonExpression;
 import com.facebook.presto.sql.tree.Expression;
 import com.facebook.presto.sql.tree.FunctionCall;
+import com.facebook.presto.sql.tree.LongLiteral;
 import com.facebook.presto.sql.tree.Node;
 import com.facebook.presto.sql.tree.NodeRewriter;
 import com.facebook.presto.sql.tree.QualifiedName;
+import com.facebook.presto.sql.tree.QualifiedNameReference;
+import com.facebook.presto.sql.tree.Query;
 import com.facebook.presto.sql.tree.Statement;
 import com.facebook.presto.sql.tree.StringLiteral;
 import com.facebook.presto.sql.tree.TreeRewriter;
 import com.google.common.base.Function;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 import java.util.List;
+import java.util.Map;
 
 public final class QueryTranslator
 {
@@ -41,6 +47,37 @@ public final class QueryTranslator
     private static class Rewriter
             extends NodeRewriter<Void>
     {
+        @SuppressWarnings("AssignmentToForLoopParameter")
+        @Override
+        public Node rewriteQuery(Query node, Void context, TreeRewriter<Void> treeRewriter)
+        {
+            node = treeRewriter.defaultRewrite(node, context);
+
+            Map<String, Integer> aliases = extractAliases(node);
+
+            ImmutableList.Builder<Expression> groupBy = ImmutableList.builder();
+            for (Expression expression : node.getGroupBy()) {
+                if (expression instanceof QualifiedNameReference) {
+                    String name = ((QualifiedNameReference) expression).getName().toString().toLowerCase();
+                    if (aliases.containsKey(name)) {
+                        expression = new LongLiteral(aliases.get(name).toString());
+                    }
+                }
+                groupBy.add(expression);
+            }
+
+            return new Query(
+                    node.getWith(),
+                    node.getSelect(),
+                    node.getFrom(),
+                    node.getWhere(),
+                    groupBy.build(),
+                    node.getHaving(),
+                    node.getOrderBy(),
+                    node.getLimit(),
+                    node.getUnion());
+        }
+
         @Override
         public Node rewriteFunctionCall(FunctionCall node, final Void context, final TreeRewriter<Void> treeRewriter)
         {
@@ -166,5 +203,19 @@ public final class QueryTranslator
             args = args.subList(1, args.size());
         }
         return node;
+    }
+
+    private static Map<String, Integer> extractAliases(Query query)
+    {
+        ImmutableMap.Builder<String, Integer> aliases = ImmutableMap.builder();
+        int ordinal = 1;
+        for (Expression expression : query.getSelect().getSelectItems()) {
+            if (expression instanceof AliasedExpression) {
+                AliasedExpression alias = (AliasedExpression) expression;
+                aliases.put(alias.getAlias().toLowerCase(), ordinal);
+            }
+            ordinal++;
+        }
+        return aliases.build();
     }
 }
