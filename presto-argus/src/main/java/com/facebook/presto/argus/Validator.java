@@ -3,10 +3,10 @@ package com.facebook.presto.argus;
 import com.facebook.presto.argus.peregrine.PeregrineErrorCode;
 import com.facebook.presto.argus.peregrine.PeregrineException;
 import com.google.common.base.Function;
+import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedMultiset;
 import com.google.common.collect.ImmutableSortedSet;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.SortedMultiset;
 import com.google.common.math.DoubleMath;
@@ -328,7 +328,7 @@ public class Validator
 
             try (Statement statement = connection.createStatement();
                     ResultSet resultSet = statement.executeQuery(runnablePrestoQuery)) {
-                prestoColumns = getJdbcColumnLabels(resultSet);
+                prestoColumns = normalizeColumnNames(getJdbcColumnLabels(resultSet));
                 prestoResults = convertJdbcResultSet(resultSet);
                 prestoState = PrestoState.SUCCESS;
                 prestoTime = nanosSince(start);
@@ -543,13 +543,33 @@ public class Validator
 
     private static List<String> normalizeColumnNames(List<String> columns)
     {
-        return ImmutableList.copyOf(Iterables.transform(columns, new Function<String, String>()
+        return FluentIterable.from(columns)
+                .transform(toLowerCase())
+                .transform(normalizeDefaultNames())
+                .toList();
+    }
+
+    private static Function<String, String> normalizeDefaultNames()
+    {
+        return new Function<String, String>()
         {
             @Override
             public String apply(String s)
             {
                 return s.matches("_c\\d+") ? s.replace("c", "col") : s;
             }
-        }));
+        };
+    }
+
+    private static Function<String, String> toLowerCase()
+    {
+        return new Function<String, String>()
+        {
+            @Override
+            public String apply(String s)
+            {
+                return s.toLowerCase();
+            }
+        };
     }
 }
