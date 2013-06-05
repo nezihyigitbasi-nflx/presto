@@ -145,16 +145,16 @@ public final class QueryTranslator
 
             return treeRewriter.defaultRewrite(node, context);
         }
+    }
 
-        private static FunctionCall functionCall(String name, FunctionCall node)
-        {
-            return new FunctionCall(QualifiedName.of(name), node.getWindow().orNull(), node.isDistinct(), node.getArguments());
-        }
+    private static FunctionCall functionCall(String name, FunctionCall node)
+    {
+        return new FunctionCall(QualifiedName.of(name), node.getWindow().orNull(), node.isDistinct(), node.getArguments());
+    }
 
-        private static FunctionCall functionCall(String name, FunctionCall node, List<Expression> args)
-        {
-            return new FunctionCall(QualifiedName.of(name), node.getWindow().orNull(), node.isDistinct(), args);
-        }
+    private static FunctionCall functionCall(String name, FunctionCall node, List<Expression> args)
+    {
+        return new FunctionCall(QualifiedName.of(name), node.getWindow().orNull(), node.isDistinct(), args);
     }
 
     private static Node rewriteConcat(List<Expression> args)
