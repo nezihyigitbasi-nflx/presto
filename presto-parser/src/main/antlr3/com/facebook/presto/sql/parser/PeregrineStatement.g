@@ -123,31 +123,30 @@ singleExpression
     ;
 
 statement
-    : selectStmt      -> ^(QUERY selectStmt)
+    : query
     | showTablesStmt
     | showColumnsStmt
     | showPartitionsStmt
     | showFunctionsStmt
     ;
 
+query
+    : selectStmt -> ^(QUERY selectStmt)
+    ;
+
 selectStmt
-    : withClause?
-      selectClause
+    : selectClause
       fromClause?
       whereClause?
       groupClause?
       havingClause?
       orderClause?
       limitClause?
+      unionQuery?
     ;
 
-restrictedSelectStmt
-    : selectClause
-      fromClause
-    ;
-
-withClause
-    : WITH r=RECURSIVE? withList -> ^(WITH $r? withList)
+unionQuery
+    : UNION ALL query -> ^(UNION query)
     ;
 
 selectClause
@@ -176,14 +175,6 @@ orderClause
 
 limitClause
     : LIMIT integer -> ^(LIMIT integer)
-    ;
-
-withList
-    : withQuery (',' withQuery)* -> ^(WITH_LIST withQuery+)
-    ;
-
-withQuery
-    : ident aliasedColumns? AS subquery -> ^(WITH_QUERY ident subquery aliasedColumns?)
     ;
 
 selectExpr
@@ -485,7 +476,6 @@ integer
 nonReserved
     : SHOW | TABLES | COLUMNS | PARTITIONS | FUNCTIONS
     | OVER | PARTITION | RANGE | ROWS | PRECEDING | FOLLOWING | CURRENT | ROW
-    | REFRESH | MATERIALIZED | VIEW | ALIAS
     | YEAR | MONTH | DAY | HOUR | MINUTE | SECOND
     | DATE | TIME | TIMESTAMP
     | NULLS
@@ -563,11 +553,6 @@ PRECEDING: 'PRECEDING';
 FOLLOWING: 'FOLLOWING';
 CURRENT: 'CURRENT';
 ROW: 'ROW';
-WITH: 'WITH';
-RECURSIVE: 'RECURSIVE';
-CREATE: 'CREATE';
-TABLE: 'TABLE';
-CONSTRAINT: 'CONSTRAINT';
 DESCRIBE: 'DESCRIBE';
 CAST: 'CAST';
 SHOW: 'SHOW';
@@ -575,11 +560,7 @@ TABLES: 'TABLES';
 COLUMNS: 'COLUMNS';
 PARTITIONS: 'PARTITIONS';
 FUNCTIONS: 'FUNCTIONS';
-MATERIALIZED: 'MATERIALIZED';
-VIEW: 'VIEW';
-REFRESH: 'REFRESH';
-DROP: 'DROP';
-ALIAS: 'ALIAS';
+UNION: 'UNION';
 
 EQ  : '=';
 NEQ : '<>' | '!=';

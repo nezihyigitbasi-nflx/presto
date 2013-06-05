@@ -106,13 +106,19 @@ public final class TreeRewriter<C>
                 orderBy.add(rewrite(sortItem, context.get()));
             }
 
+            Query union = null;
+            if (node.getUnion().isPresent()) {
+                union = rewrite(node.getUnion().get(), context.get());
+            }
+
             if ((with != node.getWith().orNull()) ||
                     (select != node.getSelect()) ||
                     !sameElements(node.getFrom(), from.build()) ||
                     where != node.getWhere().orNull() ||
                     !sameElements(node.getGroupBy(), groupBy.build()) ||
                     having != node.getHaving().orNull() ||
-                    !sameElements(orderBy.build(), node.getOrderBy())) {
+                    !sameElements(orderBy.build(), node.getOrderBy()) ||
+                    union != node.getUnion().orNull()) {
 
                 return new Query(
                         Optional.fromNullable(with),
@@ -122,7 +128,8 @@ public final class TreeRewriter<C>
                         groupBy.build(),
                         Optional.fromNullable(having),
                         orderBy.build(),
-                        node.getLimit());
+                        node.getLimit(),
+                        Optional.fromNullable(union));
             }
 
             return node;

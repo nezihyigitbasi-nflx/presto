@@ -75,7 +75,8 @@ selectStmt returns [Query value]
             Objects.firstNonNull($groupClause.value, ImmutableList.<Expression>of()),
             Optional.fromNullable($havingClause.value),
             Objects.firstNonNull($orderClause.value, ImmutableList.<SortItem>of()),
-            Optional.fromNullable($limitClause.value));
+            Optional.fromNullable($limitClause.value),
+            Optional.<Query>absent());
         }
     ;
 
@@ -89,7 +90,8 @@ restrictedSelectStmt returns [Query value]
             ImmutableList.<Expression>of(),
             Optional.<Expression>absent(),
             ImmutableList.<SortItem>of(),
-            Optional.<String>absent());
+            Optional.<String>absent(),
+            Optional.<Query>absent());
         }
     ;
 

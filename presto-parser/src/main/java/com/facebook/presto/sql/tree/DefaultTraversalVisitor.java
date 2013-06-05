@@ -75,6 +75,9 @@ public class DefaultTraversalVisitor<R, C>
         for (SortItem sortItem : node.getOrderBy()) {
             process(sortItem, context);
         }
+        if (node.getUnion().isPresent()) {
+            process(node.getUnion().get(), context);
+        }
 
         return null;
     }

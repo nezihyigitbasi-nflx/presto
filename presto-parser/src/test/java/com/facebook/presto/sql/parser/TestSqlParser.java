@@ -57,7 +57,8 @@ public class TestSqlParser
                         ImmutableList.<Expression>of(),
                         Optional.<Expression>absent(),
                         ImmutableList.<SortItem>of(),
-                        Optional.<String>absent()));
+                        Optional.<String>absent(),
+                        Optional.<Query>absent()));
     }
 
     @Test(expectedExceptions = ParsingException.class, expectedExceptionsMessageRegExp = "line 1:7: mismatched input 'x' expecting EOF")

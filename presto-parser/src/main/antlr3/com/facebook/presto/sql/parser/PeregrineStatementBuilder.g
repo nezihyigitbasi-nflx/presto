@@ -54,55 +54,25 @@ query returns [Query value]
     ;
 
 selectStmt returns [Query value]
-    : withClause?
-      selectClause
+    : selectClause
       fromClause?
       whereClause?
       groupClause?
       havingClause?
       orderClause?
       limitClause?
+      unionQuery?
         { $value = new Query(
-            Optional.fromNullable($withClause.value),
+            Optional.<With>absent(),
             $selectClause.value,
             $fromClause.value,
             Optional.fromNullable($whereClause.value),
             Objects.firstNonNull($groupClause.value, ImmutableList.<Expression>of()),
             Optional.fromNullable($havingClause.value),
             Objects.firstNonNull($orderClause.value, ImmutableList.<SortItem>of()),
-            Optional.fromNullable($limitClause.value));
+            Optional.fromNullable($limitClause.value),
+            Optional.fromNullable($unionQuery.value));
         }
-    ;
-
-restrictedSelectStmt returns [Query value]
-    : selectClause fromClause
-        { $value = new Query(
-            Optional.<With>absent(),
-            $selectClause.value,
-            $fromClause.value,
-            Optional.<Expression>absent(),
-            ImmutableList.<Expression>of(),
-            Optional.<Expression>absent(),
-            ImmutableList.<SortItem>of(),
-            Optional.<String>absent());
-        }
-    ;
-
-withClause returns [With value]
-    : ^(WITH recursive withList) { $value = new With($recursive.value, $withList.value); }
-    ;
-
-recursive returns [boolean value]
-    : RECURSIVE { $value = true; }
-    |           { $value = false; }
-    ;
-
-withList returns [List<WithQuery> value = new ArrayList<>()]
-    : ^(WITH_LIST ( withQuery { $value.add($withQuery.value); } )+ )
-    ;
-
-withQuery returns [WithQuery value]
-    : ^(WITH_QUERY i=ident q=subquery c=aliasedColumns?) { $value = new WithQuery($i.value, $q.value, $c.value); }
     ;
 
 selectClause returns [Select value]
@@ -162,6 +132,10 @@ nullOrdering returns [SortItem.NullOrdering value]
 
 limitClause returns [String value]
     : ^(LIMIT integer) { $value = $integer.value; }
+    ;
+
+unionQuery returns [Query value]
+    : ^(UNION query) { $value = $query.value; }
     ;
 
 relationList returns [List<Relation> value = new ArrayList<>()]

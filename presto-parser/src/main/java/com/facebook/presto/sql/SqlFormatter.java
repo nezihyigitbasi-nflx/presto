@@ -140,6 +140,11 @@ public final class SqlFormatter
                         .append('\n');
             }
 
+            if (node.getUnion().isPresent()) {
+                append(indent, "UNION ALL\n");
+                process(node.getUnion().get(), indent);
+            }
+
             return null;
         }
 

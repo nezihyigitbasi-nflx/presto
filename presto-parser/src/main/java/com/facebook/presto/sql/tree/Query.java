@@ -5,7 +5,6 @@ import com.google.common.base.Optional;
 
 import java.util.List;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class Query
@@ -19,6 +18,7 @@ public class Query
     private final Optional<Expression> having;
     private final List<SortItem> orderBy;
     private final Optional<String> limit;
+    private final Optional<Query> union;
 
     public Query(
             Optional<With> with,
@@ -28,7 +28,8 @@ public class Query
             List<Expression> groupBy,
             Optional<Expression> having,
             List<SortItem> orderBy,
-            Optional<String> limit)
+            Optional<String> limit,
+            Optional<Query> union)
     {
         checkNotNull(with, "with is null");
         checkNotNull(select, "select is null");
@@ -37,6 +38,7 @@ public class Query
         checkNotNull(where, "where is null");
         checkNotNull(having, "having is null");
         checkNotNull(limit, "limit is null");
+        checkNotNull(union, "union is null");
 
         this.with = with;
         this.select = select;
@@ -46,6 +48,7 @@ public class Query
         this.having = having;
         this.orderBy = orderBy;
         this.limit = limit;
+        this.union = union;
     }
 
     public Optional<With> getWith()
@@ -88,6 +91,11 @@ public class Query
         return limit;
     }
 
+    public Optional<Query> getUnion()
+    {
+        return union;
+    }
+
     @Override
     public <R, C> R accept(AstVisitor<R, C> visitor, C context)
     {
@@ -106,6 +114,7 @@ public class Query
                 .add("having", having.orNull())
                 .add("orderBy", orderBy)
                 .add("limit", limit.orNull())
+                .add("union", union.orNull())
                 .omitNullValues()
                 .toString();
     }
@@ -127,12 +136,13 @@ public class Query
                 Objects.equal(groupBy, o.groupBy) &&
                 Objects.equal(having, o.having) &&
                 Objects.equal(orderBy, o.orderBy) &&
-                Objects.equal(limit, o.limit);
+                Objects.equal(limit, o.limit) &&
+                Objects.equal(union, o.union);
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hashCode(with, select, from, where, groupBy, having, orderBy, limit);
+        return Objects.hashCode(with, select, from, where, groupBy, having, orderBy, limit, union);
     }
 }

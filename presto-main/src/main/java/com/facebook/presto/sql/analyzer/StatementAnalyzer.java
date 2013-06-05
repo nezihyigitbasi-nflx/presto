@@ -126,7 +126,8 @@ class StatementAnalyzer
                 ImmutableList.<Expression>of(),
                 Optional.<Expression>absent(),
                 ImmutableList.of(ascending("table_name")),
-                Optional.<String>absent());
+                Optional.<String>absent(),
+                Optional.<Query>absent());
 
         return process(query, context);
     }
@@ -154,7 +155,8 @@ class StatementAnalyzer
                 ImmutableList.<Expression>of(),
                 Optional.<Expression>absent(),
                 ImmutableList.of(ascending("ordinal_position")),
-                Optional.<String>absent());
+                Optional.<String>absent(),
+                Optional.<Query>absent());
 
         return process(query, context);
     }
@@ -201,7 +203,8 @@ class StatementAnalyzer
                 ImmutableList.of(nameReference("partition_number")),
                 Optional.<Expression>absent(),
                 ImmutableList.of(ascending("partition_number")),
-                Optional.<String>absent());
+                Optional.<String>absent(),
+                Optional.<Query>absent());
 
         return process(query, context);
     }
@@ -220,7 +223,8 @@ class StatementAnalyzer
                 ImmutableList.<Expression>of(),
                 Optional.<Expression>absent(),
                 ImmutableList.of(ascending("function_name")),
-                Optional.<String>absent());
+                Optional.<String>absent(),
+                Optional.<Query>absent());
 
         return process(query, context);
     }
