@@ -395,7 +395,11 @@ public class Validator
         while (resultSet.next()) {
             List<Object> row = new ArrayList<>();
             for (int i = 1; i <= columnCount; i++) {
-                row.add(resultSet.getObject(i));
+                Object value = resultSet.getObject(i);
+                if ("null".equals(value)) {
+                    value = null;
+                }
+                row.add(value);
             }
             rows.add(unmodifiableList(row));
         }
