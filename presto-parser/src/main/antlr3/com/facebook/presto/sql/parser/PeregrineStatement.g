@@ -620,5 +620,5 @@ COMMENT
     ;
 
 WS
-    : (' ' | '\t' | '\n' | '\r' | '\u3000')+ { $channel=HIDDEN; }
+    : (' ' | '\t' | '\n' | '\r' | '\u0080'..'\uFFFF')+ { $channel=HIDDEN; }
     ;
