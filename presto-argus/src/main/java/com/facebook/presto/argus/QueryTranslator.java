@@ -182,6 +182,20 @@ public final class QueryTranslator
 
             return treeRewriter.defaultRewrite(node, context);
         }
+
+        @Override
+        public Node rewriteArithmeticExpression(ArithmeticExpression node, Void context, TreeRewriter<Void> treeRewriter)
+        {
+            if (node.getType() == ArithmeticExpression.Type.ADD) {
+                Expression left = treeRewriter.rewrite(node.getLeft(), context);
+                Expression right = treeRewriter.rewrite(node.getRight(), context);
+                if ((left instanceof StringLiteral) || (right instanceof StringLiteral)) {
+                    return rewriteConcat(ImmutableList.of(left, right));
+                }
+            }
+
+            return treeRewriter.defaultRewrite(node, context);
+        }
     }
 
     private static FunctionCall functionCall(String name, FunctionCall node)
