@@ -572,10 +572,21 @@ GTE : '>=';
 SEMICOLON: ';';
 
 STRING
-    : '\'' ( ~( '\'' | '\\' ) | '\\\'' | '\\"' | '\\\\' )* '\''
-        { setText(getText().substring(1, getText().length() - 1).replace("\\'", "'").replace("\\\"", "\"").replace("\\\\", "\\")); }
-    | '"' ( ~( '\"' | '\\' ) | '\\"' | '\\\\' )* '"'
-        { setText(getText().substring(1, getText().length() - 1).replace("\\\"", "\"").replace("\\\\", "\\")); }
+    : '\'' ( ~( '\'' | '\\' ) | '\\N' | '\\\'' | '\\"' | '\\\\' )* '\''
+        { setText(getText().substring(1, getText().length() - 1)
+            .replace("\\n", "\n")
+            .replace("\\N", "\n")
+            .replace("\\'", "'")
+            .replace("\\\"", "\"")
+            .replace("\\\\", "\\"));
+        }
+    | '"' ( ~( '\"' | '\\' ) | '\\N' | '\\"' | '\\\\' )* '"'
+        { setText(getText().substring(1, getText().length() - 1)
+            .replace("\\n", "\n")
+            .replace("\\N", "\n")
+            .replace("\\\"", "\"")
+            .replace("\\\\", "\\"));
+        }
     ;
 
 INTEGER_VALUE
