@@ -189,13 +189,23 @@ public final class QueryTranslator
             if (node.getType() == ArithmeticExpression.Type.ADD) {
                 Expression left = treeRewriter.rewrite(node.getLeft(), context);
                 Expression right = treeRewriter.rewrite(node.getRight(), context);
-                if ((left instanceof StringLiteral) || (right instanceof StringLiteral)) {
+                if (isStringType(left) || isStringType(right)) {
                     return rewriteConcat(ImmutableList.of(left, right));
                 }
             }
 
             return treeRewriter.defaultRewrite(node, context);
         }
+    }
+
+    private static boolean isStringType(Expression e)
+    {
+        return (e instanceof StringLiteral) || isFunction(e, "concat");
+    }
+
+    private static boolean isFunction(Expression e, String name)
+    {
+        return (e instanceof FunctionCall) && (((FunctionCall) e).getName().toString().equalsIgnoreCase(name));
     }
 
     private static FunctionCall functionCall(String name, FunctionCall node)
