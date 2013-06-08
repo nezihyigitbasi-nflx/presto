@@ -17,7 +17,7 @@ public abstract class MigrationDao
             "LEFT JOIN (\n" +
             "  SELECT report_id, sum(views) views\n" +
             "  FROM report_views\n" +
-            "  WHERE from_unixtime(datetime) >= CURRENT_DATE - INTERVAL 180 DAY\n" +
+            "  WHERE datetime >= unix_timestamp(now() - INTERVAL 180 DAY)" +
             "  GROUP BY report_id\n" +
             ") v USING (report_id)\n" +
             "WHERE connection_id = 1075\n" +
