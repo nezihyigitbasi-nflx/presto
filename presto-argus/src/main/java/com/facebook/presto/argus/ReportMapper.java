@@ -24,7 +24,8 @@ public class ReportMapper
                 rs.getLong("report_id"),
                 rs.getString("namespace"),
                 rs.getString("sql_query"),
-                parseVariables(rs.getString("settings")));
+                parseVariables(rs.getString("settings")),
+                rs.getLong("views"));
     }
 
     @SuppressWarnings("unchecked")

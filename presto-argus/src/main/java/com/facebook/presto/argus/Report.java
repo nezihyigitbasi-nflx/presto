@@ -11,14 +11,16 @@ public class Report
     private final String originalQuery;
     private final Map<String, String> variables;
     private final String query;
+    private final long views;
 
-    public Report(long reportId, String namespace, String originalQuery, Map<String, String> variables)
+    public Report(long reportId, String namespace, String originalQuery, Map<String, String> variables, long views)
     {
         this.reportId = reportId;
         this.namespace = checkNotNull(namespace, "namespace is null");
         this.originalQuery = checkNotNull(originalQuery, "originalQuery is null");
         this.variables = checkNotNull(variables, "variables is null");
         this.query = removePeregrineSettings(removeTrailingTerminator(originalQuery));
+        this.views = views;
     }
 
     public long getReportId()
@@ -44,6 +46,11 @@ public class Report
     public String getQuery()
     {
         return query;
+    }
+
+    public long getViews()
+    {
+        return views;
     }
 
     private static String removeTrailingTerminator(String sql)

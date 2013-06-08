@@ -69,6 +69,7 @@ public class ArgusConverter
 
             println("Report: " + report.getReportId());
             println("Namespace: " + report.getNamespace());
+            println("Views: " + report.getViews());
 
             if (validator.resultsMatch()) {
                 valid++;

@@ -12,7 +12,7 @@ import java.util.List;
 public abstract class MigrationDao
 {
     @SqlQuery("" +
-            "SELECT report_id, namespace, sql_query, settings\n" +
+            "SELECT report_id, namespace, sql_query, settings, COALESCE(views, 0) views\n" +
             "FROM reports\n" +
             "LEFT JOIN (\n" +
             "  SELECT report_id, sum(views) views\n" +
