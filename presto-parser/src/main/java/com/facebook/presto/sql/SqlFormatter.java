@@ -26,6 +26,7 @@ import java.util.List;
 
 import static com.facebook.presto.sql.ExpressionFormatter.expressionFormatterFunction;
 import static com.facebook.presto.sql.ExpressionFormatter.formatExpression;
+import static com.facebook.presto.sql.ExpressionFormatter.formatIdentifier;
 import static com.google.common.base.Preconditions.checkArgument;
 
 public final class SqlFormatter
@@ -166,7 +167,7 @@ public final class SqlFormatter
         @Override
         protected Void visitTable(Table node, Integer indent)
         {
-            builder.append(node.getName().toString().replace(":", "@"));
+            builder.append(formatIdentifier(node.getName().toString().replace(":", "@")));
             return null;
         }
 

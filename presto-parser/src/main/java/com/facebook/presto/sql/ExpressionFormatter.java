@@ -542,21 +542,21 @@ public final class ExpressionFormatter
                 throw new RuntimeException();
             }
         }
+    }
 
-        private static String formatIdentifier(String s)
-        {
-            s = s.replace("\"", "\"\"");
-            return isValidIdentifier(s) ? s : ('"' + s + '"');
+    static String formatIdentifier(String s)
+    {
+        s = s.replace("\"", "\"\"");
+        return isValidIdentifier(s) ? s : ('"' + s + '"');
+    }
+
+    private static boolean isValidIdentifier(String s)
+    {
+        try {
+            return createExpression(s) instanceof QualifiedNameReference;
         }
-
-        private static boolean isValidIdentifier(String s)
-        {
-            try {
-                return createExpression(s) instanceof QualifiedNameReference;
-            }
-            catch (ParsingException e) {
-                return false;
-            }
+        catch (ParsingException e) {
+            return false;
         }
     }
 }
