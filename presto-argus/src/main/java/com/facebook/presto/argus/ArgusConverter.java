@@ -174,6 +174,11 @@ public class ArgusConverter
                 return true;
             }
         }
+        if (validator.getPrestoState() == PrestoState.INVALID) {
+            if (" is offline: Offlined by Prism ".equalsIgnoreCase(validator.getPrestoException().getMessage())) {
+                return true;
+            }
+        }
         return false;
     }
 
