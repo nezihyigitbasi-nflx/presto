@@ -96,7 +96,7 @@ public class ArgusConverter
                 printSql(validator);
             }
             else if (((validator.getPeregrineState() == PeregrineState.SUCCESS) && (!validator.resultsMatch())) ||
-                    (validator.resultsMatch() && (!validator.getRunnablePeregrineQuery().equals(validator.getRunnablePrestoQuery())))) {
+                    (validator.resultsMatch() && (!validator.getOriginalPeregrineQuery().equals(validator.getTranslatedPrestoQuery())))) {
                 printSql(validator);
             }
 
@@ -142,21 +142,17 @@ public class ArgusConverter
 
     private void printSql(Validator validator)
     {
-        if (validator.getRunnablePeregrineQuery() == null) {
-            return;
-        }
-
         println("");
-        if (validator.getRunnablePrestoQuery() == null) {
-            println("Peregrine SQL:\n" + validator.getRunnablePeregrineQuery());
+        if (validator.getTranslatedPrestoQuery() == null) {
+            println("Peregrine SQL:\n" + validator.getOriginalPeregrineQuery());
         }
-        else if (validator.getRunnablePeregrineQuery().equals(validator.getRunnablePrestoQuery())) {
-            println("SQL:\n" + validator.getRunnablePeregrineQuery());
+        else if (validator.getOriginalPeregrineQuery().equals(validator.getTranslatedPrestoQuery())) {
+            println("SQL:\n" + validator.getOriginalPeregrineQuery());
         }
         else {
-            println("Peregrine SQL:\n" + validator.getRunnablePeregrineQuery());
+            println("Peregrine SQL:\n" + validator.getOriginalPeregrineQuery());
             println("");
-            println("Presto SQL:\n" + validator.getRunnablePrestoQuery());
+            println("Presto SQL:\n" + validator.getTranslatedPrestoQuery());
         }
         println("");
     }

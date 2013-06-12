@@ -111,6 +111,11 @@ public class Validator
         return resultsMatch;
     }
 
+    public String getOriginalPeregrineQuery()
+    {
+        return report.getOriginalQuery();
+    }
+
     public String getRunnablePeregrineQuery()
     {
         return runnablePeregrineQuery;
