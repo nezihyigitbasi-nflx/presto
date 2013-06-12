@@ -143,17 +143,20 @@ public class ArgusConverter
 
     private void printSql(Validator validator)
     {
+        String peregrineSql = nullToEmpty(validator.getOriginalPeregrineQuery()).trim();
+        String prestoSql = nullToEmpty(validator.getTranslatedPrestoQuery()).trim();
+
         println("");
-        if (validator.getTranslatedPrestoQuery() == null) {
-            println("Peregrine SQL:\n" + validator.getOriginalPeregrineQuery());
+        if (prestoSql.isEmpty()) {
+            println("Peregrine SQL:\n" + peregrineSql);
         }
-        else if (validator.getOriginalPeregrineQuery().equals(validator.getTranslatedPrestoQuery())) {
-            println("SQL:\n" + validator.getOriginalPeregrineQuery());
+        else if (peregrineSql.equals(prestoSql)) {
+            println("SQL:\n" + peregrineSql);
         }
         else {
-            println("Peregrine SQL:\n" + validator.getOriginalPeregrineQuery());
+            println("Peregrine SQL:\n" + peregrineSql);
             println("");
-            println("Presto SQL:\n" + validator.getTranslatedPrestoQuery());
+            println("Presto SQL:\n" + prestoSql);
         }
         println("");
     }
