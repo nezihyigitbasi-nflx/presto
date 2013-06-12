@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 
 import static com.facebook.presto.argus.Validator.PeregrineState;
 import static com.facebook.presto.argus.Validator.PrestoState;
+import static com.google.common.base.Strings.nullToEmpty;
 import static com.google.common.util.concurrent.Uninterruptibles.sleepUninterruptibly;
 import static java.lang.String.format;
 import static java.util.concurrent.Executors.newFixedThreadPool;
@@ -171,7 +172,8 @@ public class ArgusConverter
             }
         }
         if (validator.getPrestoState() == PrestoState.INVALID) {
-            if (" is offline: Offlined by Prism ".equalsIgnoreCase(validator.getPrestoException().getMessage())) {
+            String message = nullToEmpty(validator.getPrestoException().getMessage());
+            if (message.toLowerCase().contains(" is offline: offlined by prism ")) {
                 return true;
             }
         }
