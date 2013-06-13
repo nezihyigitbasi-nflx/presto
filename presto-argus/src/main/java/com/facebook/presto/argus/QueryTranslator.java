@@ -97,6 +97,12 @@ public final class QueryTranslator
 
             String name = node.getName().toString().toLowerCase();
 
+            if (name.equals("array_get")) {
+                String path = "$[" + ((LongLiteral) args.get(1)).getValue() +  "]";
+                args = ImmutableList.of(args.get(0), new StringLiteral(path));
+                return functionCall("json_extract_scalar", node, args);
+            }
+
             if (name.equals("approx_count_distinct")) {
                 return functionCall("approx_distinct", node, args);
             }

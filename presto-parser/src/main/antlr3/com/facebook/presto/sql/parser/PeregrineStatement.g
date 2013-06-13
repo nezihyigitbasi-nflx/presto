@@ -290,6 +290,11 @@ numericFactor
     ;
 
 exprPrimary
+    : (exprAtom -> exprAtom)
+      ( '[' integer ']' ->  ^(FUNCTION_CALL ^(QNAME IDENT["array_get"]) $exprPrimary integer) )?
+    ;
+
+exprAtom
     : NULL
     | qname
     | function
