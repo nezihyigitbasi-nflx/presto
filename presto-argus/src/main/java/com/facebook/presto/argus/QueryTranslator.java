@@ -33,6 +33,9 @@ public final class QueryTranslator
 
     public static String translateQuery(String sql)
     {
+        sql = sql.replaceAll("(?)percentile_array\\[(\\d+)]",
+                "cast(json_extract_scalar(percentile_array, '\\$[$1]') as double)");
+
         try {
             Statement statement = PeregrineSqlParser.createStatement(sql);
             statement = TreeRewriter.rewriteWith(new Rewriter(), statement);
