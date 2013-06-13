@@ -98,10 +98,10 @@ public final class QueryTranslator
             String name = node.getName().toString().toLowerCase();
 
             if (name.equals("approx_count_distinct")) {
-                return functionCall("approx_distinct", node);
+                return functionCall("approx_distinct", node, args);
             }
             if (name.equals("get_json_object")) {
-                return functionCall("json_extract_scalar", node);
+                return functionCall("json_extract_scalar", node, args);
             }
 
             if (name.equals("cast_as_double")) {
@@ -209,11 +209,6 @@ public final class QueryTranslator
     private static boolean isFunction(Expression e, String name)
     {
         return (e instanceof FunctionCall) && (((FunctionCall) e).getName().toString().equalsIgnoreCase(name));
-    }
-
-    private static FunctionCall functionCall(String name, FunctionCall node)
-    {
-        return new FunctionCall(QualifiedName.of(name), node.getWindow().orNull(), node.isDistinct(), node.getArguments());
     }
 
     private static FunctionCall functionCall(String name, FunctionCall node, List<Expression> args)
