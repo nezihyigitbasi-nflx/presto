@@ -97,6 +97,12 @@ public final class QueryTranslator
 
             String name = node.getName().toString().toLowerCase();
 
+            if (name.equals("count")) {
+                if ((args.size() == 1) && (args.get(0) instanceof ComparisonExpression)) {
+                    return functionCall("count_if", node, args);
+                }
+            }
+
             if (name.equals("array_get")) {
                 String path = "$[" + ((LongLiteral) args.get(1)).getValue() +  "]";
                 args = ImmutableList.of(args.get(0), new StringLiteral(path));

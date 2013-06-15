@@ -87,8 +87,8 @@ public class Validator
     public boolean valid()
     {
         return canPeregrineExecute() &&
-                canPrestoExecute() &&
-                compareResults();
+                ((canPrestoExecuteOriginal() && compareResults()) ||
+                        canPrestoExecuteTranslated() && compareResults());
     }
 
     public Report getReport()
@@ -303,10 +303,14 @@ public class Validator
         return false;
     }
 
-    private boolean canPrestoExecute()
+    private boolean canPrestoExecuteTranslated()
     {
-        return canPrestoExecute(report.getQuery()) ||
-                canPrestoExecute(QueryTranslator.translateQuery(report.getQuery()));
+        return canPrestoExecute(QueryTranslator.translateQuery(report.getQuery()));
+    }
+
+    private boolean canPrestoExecuteOriginal()
+    {
+        return canPrestoExecute(report.getQuery());
     }
 
     private boolean canPrestoExecute(String sql)
