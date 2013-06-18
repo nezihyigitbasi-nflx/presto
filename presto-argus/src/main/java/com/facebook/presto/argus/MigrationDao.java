@@ -22,7 +22,7 @@ public abstract class MigrationDao
             ") v USING (report_id)\n" +
             "WHERE connection_id = 1075\n" +
             "  AND report_id NOT IN (SELECT report_id FROM presto_migrations WHERE migrated = 1)\n" +
-            "ORDER BY views DESC")
+            "ORDER BY views DESC, report_id")
     @Mapper(ReportMapper.class)
     public abstract List<Report> getReports();
 
