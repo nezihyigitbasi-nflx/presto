@@ -109,6 +109,17 @@ public final class QueryTranslator
                 return functionCall("json_extract_scalar", node, args);
             }
 
+            if (name.equals("find_in_array")) {
+                if (args.size() != 2) {
+                    return treeRewriter.defaultRewrite(node, context);
+                }
+                return functionCall("json_array_contains", node, ImmutableList.of(args.get(1), args.get(0)));
+            }
+
+            if (name.equals("size")) {
+                return functionCall("json_array_length", node, args);
+            }
+
             if (name.equals("approx_count_distinct")) {
                 return functionCall("approx_distinct", node, args);
             }
@@ -206,6 +217,25 @@ public final class QueryTranslator
                 Expression right = treeRewriter.rewrite(node.getRight(), context);
                 if (isStringType(left) || isStringType(right)) {
                     return rewriteConcat(ImmutableList.of(left, right));
+                }
+            }
+
+            return treeRewriter.defaultRewrite(node, context);
+        }
+
+        @Override
+        public Node rewriteComparisonExpression(ComparisonExpression node, Void context, TreeRewriter<Void> treeRewriter)
+        {
+            if (node.getType() == ComparisonExpression.Type.GREATER_THAN) {
+                Expression left = treeRewriter.rewrite(node.getLeft(), context);
+                Expression right = treeRewriter.rewrite(node.getRight(), context);
+                if (left instanceof FunctionCall) {
+                    String name = ((FunctionCall) left).getName().toString().toLowerCase();
+                    if (name.equals("json_array_contains")) {
+                        if ((right instanceof LongLiteral) && (((LongLiteral) right).getValue() == 0)) {
+                            return left;
+                        }
+                    }
                 }
             }
 
