@@ -157,6 +157,13 @@ public final class QueryTranslator
                 return new ArithmeticExpression(ArithmeticExpression.Type.DIVIDE, args.get(0), args.get(1));
             }
 
+            if (name.equals("modulo")) {
+                if (args.size() != 2) {
+                    return treeRewriter.defaultRewrite(node, context);
+                }
+                return new ArithmeticExpression(ArithmeticExpression.Type.MODULUS, args.get(0), args.get(1));
+            }
+
             if (name.equals("equal_to")) {
                 if (args.size() != 2) {
                     return treeRewriter.defaultRewrite(node, context);
