@@ -184,6 +184,15 @@ public final class QueryTranslator
                 return rewriteConcat(args);
             }
 
+            if (name.equals("split")) {
+                if ((args.size() == 3) && (args.get(2) instanceof LongLiteral)) {
+                    long part = ((LongLiteral) args.get(2)).getValue();
+                    args = ImmutableList.of(args.get(0), args.get(1), new LongLiteral(String.valueOf(part + 1)));
+                    return functionCall("split_part", node, args);
+                }
+                return treeRewriter.defaultRewrite(node, context);
+            }
+
             if (name.equals("strftime")) {
                 if (args.size() == 1) {
                     args = ImmutableList.of(args.get(0), DEFAULT_DATE_FORMAT);
