@@ -120,6 +120,10 @@ public final class QueryTranslator
                 return functionCall("json_array_length", node, args);
             }
 
+            if (name.equals("approx_weighted_percentile")) {
+                return new Cast(functionCall("approx_percentile", node, args), "double");
+            }
+
             if (name.equals("approx_percentile")) {
                 return new Cast(node, "double");
             }
