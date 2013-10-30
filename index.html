@@ -10,6 +10,9 @@
     <meta property="og:title" content="Presto | Distributed SQL Query Engine for Big Data">
     <meta property="og:image" content="static/logo_og.png">
     <meta property="og:description" content="Distributed SQL Query Engine for Big Data">
+    <script src="static/js/jquery-1.10.2.min.js"></script>
+    <script src="static/js/lightbox-2.6.min.js"></script>
+    <link href="static/css/lightbox.css" rel="stylesheet"/>
 </head>
 <body>
 
@@ -19,6 +22,7 @@
         <ul class="nav">
             <li><a href="docs/current/installation.html">Installation</a></li>
             <li><a href="docs/current/">Docs</a></li>
+            <li><a href="faq.html">FAQ</a></li>
             <li><a href="community.html">Community</a></li>
             <li><a href="https://github.com/facebook/presto">GitHub</a>
         </ul>
@@ -42,32 +46,36 @@
         <h2>What is Presto?</h2>
 
         <p>
-            Presto is an open source distributed SQL query engine for
-            running interactive analytic queries against data sources
-            of all sizes ranging from gigabytes to petabytes.
+            <b>Presto is a open source, distributed SQL query engine optimized for ad-hoc
+                analysis at interactive speed.</b> It supports standard ANSI SQL,
+            including complex queries, aggregations, joins, and window functions. These SQL queries are parsed,
+            optimized, and distributed to workers that have been designed to execute queries
+            against Petabytes of information in seconds or minutes.
         </p>
 
-        <p>
-            Presto was designed and written from the ground up for
-            interactive analytics and approaches the speed of commercial
-            data warehouses while scaling to the size of organizations
-            like Facebook.
-        </p>
+
+        <a href="static/presto-architecture.jpg" data-lightbox="architecture" title="Presto Architectire">
+            <img src="static/presto-architecture.jpg" width="100%"/>
+        </a>
 
         <h2>What can it do?</h2>
 
         <p>
-            Presto allows querying data where it lives, including Hive,
+            Presto queries data where it currently resides and the current version of Presto supports Hive,
             HBase, relational databases or even proprietary data stores.
             A single Presto query can combine data from multiple sources,
             allowing for analytics across your entire organization.
         </p>
 
+        <h2>Who is it for?</h2>
+
         <p>
             Presto is targeted at analysts who expect response times ranging
             from sub-second to minutes. Presto breaks the false choice between
             having fast analytics using an expensive commercial solution or
-            using a slow "free" solution that requires excessive hardware.
+            using a slow "free" solution that requires excessive hardware. If you are currently executing queries with
+            Hive, Presto's efficient approach to turning SQL into an efficient distributed execution plan will yield
+            significant advantages over Hive's approach.
         </p>
 
         <h2>Who uses it?</h2>
@@ -76,7 +84,13 @@
             Facebook uses Presto for interactive queries against several
             internal data stores, including their 300PB data warehouse.
             Over 1,000 Facebook employees use Presto daily to run more than
-            30,000 queries that in total scan over a petabyte each per day.
+            30,000 queries that in total scan over a petabyte each per day. Facebook has released Presto as an open
+            source project under the Apache Software License Version 2, and we look forward to hearing about your use
+            cases and how Presto can help with your interactive analysis.
+        </p>
+
+        <p>
+            <b>For answers to more questions, please read our <a href="faq.html">FAQ</a>.</b>
         </p>
     </div>
 

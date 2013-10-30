@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Presto | Community</title>
+    <link rel="stylesheet" href="static/presto.css" type="text/css"/>
+
+    <meta name="viewport" content="width=device-width">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Presto | Distributed SQL Query Engine for Big Data">
+    <meta property="og:image" content="static/logo_og.png">
+    <meta property="og:description" content="Distributed SQL Query Engine for Big Data">
+    <script src="static/js/jquery-1.10.2.min.js"></script>
+    <script src="static/js/lightbox-2.6.min.js"></script>
+    <link href="static/css/lightbox.css" rel="stylesheet"/>
+</head>
+<body>
+
+<header class="topbar clearfix">
+    <nav class="width">
+        <a href="index.html"><h1>Presto</h1></a>
+        <ul class="nav">
+            <li><a href="docs/current/installation.html">Installation</a></li>
+            <li><a href="docs/current/">Docs</a></li>
+            <li><a href="faq.html">FAQ</a></li>
+            <li><a href="community.html">Community</a></li>
+            <li><a href="https://github.com/facebook/presto">GitHub</a>
+        </ul>
+    </nav>
+</header>
+
+<header class="hero clearfix">
+    <div class="width">
+        <h1>Presto Frequently Asked Questions</h1>
+    </div>
+</header>
+
+<div class="content homecontent width clearfix">
+    <div class="">
+
+        <p>The following page is a collection of frequently asked questions about the Presto project. If you don't
+        find the question or answer you are looking for send a question to the Presto Google Group or ask your
+        question on either Stack Overlow or IRC.  For more information about our community resources,
+        <a href="community.html">click here</a>.</p>
+
+
+        <h2>How does Presto work?</h2>
+
+        <p>
+            The client sends SQL to the Presto coordinator. The coordinator
+            parses, analyzes, and plans the query execution. The scheduler wires
+            together the execution pipeline, assigns work to nodes closest to the
+            data , and monitors progress. The client pulls data from output
+            stage, which in turn pulls data from underlying stages.
+        </p>
+
+        <p style="text-align: center;">
+        <a href="static/presto-architecture.jpg" data-lightbox="architecture" title="Presto Architectire">
+            <img src="static/presto-architecture.jpg" width="580"/>
+        </a>
+        </p>
+
+        <h2>What backend storage providers does Presto support?</h2>
+
+        <p>
+            During the initial phase of the project, we realized that
+            large data sets were being stored in many other systems in
+            addition to HDFS.  Some data stores are well-­‐known
+            systems such as HBase, but others are custom systems such
+            as the Facebook News Feed backend.  Presto was designed
+            with a simple storage abstraction that makes it easy to
+            provide SQL query capability against these disparate data
+            sources.  In addition to the primary Hive/HDFS backend, we
+            have built Presto connectors to several other systems,
+            including HBase, Scribe, and other custom systems.
+        </p>
+
+        <p style="text-align: center;">
+            <a href="static/pluggable-backends.jpg" data-lightbox="architecture" title="Presto Architectire">
+                <img src="static/pluggable-backends.jpg" width="580"/>
+            </a>
+        </p>
+
+        <p>
+            Extensibility is a key design point for Presto which is
+            why we've developed a storage plugin API so that users can
+            integrate Presto with existing sources of data.  Storage
+            plugins (called connectors) only need to provide
+            interfaces for fetching metadata, getting data locations,
+            and accessing the data itself.
+        </p>
+
+
+        <h2>Why did the Presto Project choose Java?</h2>
+
+        <p>
+            The Presto system is implemented in Java because it’s fast
+            to develop, has a great ecosystem, and is easy to
+            integrate with the rest of the data infrastructure
+            components at Facebook that are primarily built in Java.
+            Presto dynamically compiles certain portions of the query
+            plan down to bytecode which lets the JVM optimize and
+            generate native machine code.  Through careful use of
+            memory and data structures, Presto avoids typical issues
+            of Java code related to memory allocation and garbage
+            collection.  (In a later post, we will share some tips and
+            tricks for writing high-­‐performance Java system code and
+            the lessons learned while building Presto.)
+        </p>
+
+        <h2>What is the Roadmap for Presto?</h2>
+
+        <p>
+            We are actively working on extending Presto functionality
+            and improving performance.  In the next few months, we
+            will remove restrictions on join and aggregation sizes and
+            introduce the ability to write output tables.  We are also
+            working on a query “accelerator” by designing a new data
+            format that is optimized for query processing and avoids
+            unnecessary transformations.  This feature will allow hot
+            subsets of data to be cached from backend data store, and
+            the system will transparently use cached data to
+            “accelerate” queries.  We are also working on a high
+            performance HBase connector.</p>
+
+
+    </div>
+
+    <div class="rightcol">
+    </div>
+</div>
+
+<div class="footer">&copy; Copyright 2013, Facebook</div>
+
+<div id="fb-root"></div>
+
+<script>
+    !function (d, s, id) {
+        var js;
+        var fjs = d.getElementsByTagName(s)[0];
+        var p = /^http:/.test(d.location) ? 'http' : 'https';
+        if (!d.getElementById(id)) {
+            js = d.createElement(s);
+            js.id = id;
+            js.src = p + "://platform.twitter.com/widgets.js";
+            fjs.parentNode.insertBefore(js, fjs);
+        }
+    }(document, "script", "twitter-wjs");
+</script>
+
+</body>
+</html>
