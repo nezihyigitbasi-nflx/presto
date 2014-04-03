@@ -21,7 +21,6 @@ import com.facebook.presto.spi.PartitionResult;
 import com.facebook.presto.spi.SchemaTableName;
 import com.facebook.presto.spi.SplitSource;
 import com.facebook.presto.spi.TupleDomain;
-import com.google.common.base.Joiner;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -51,11 +50,13 @@ public class BaseJdbcClient
     protected final Driver driver;
     protected final String connectionUrl;
     protected final Properties connectionProperties;
+    protected final String identifierQuote;
 
     @Inject
-    public BaseJdbcClient(JdbcConnectorId connectorId, BaseJdbcConfig config)
+    public BaseJdbcClient(JdbcConnectorId connectorId, BaseJdbcConfig config, String identifierQuote)
     {
         this.connectorId = checkNotNull(connectorId, "connectorId is null").toString();
+        this.identifierQuote = checkNotNull(identifierQuote, "identifierQuote is null");
 
         checkNotNull(config, "config is null");
         try {
@@ -163,7 +164,8 @@ public class BaseJdbcClient
                     // skip unsupported column types
                     if (columnType != null) {
                         String columnName = resultSet.getString(4).toLowerCase();
-                        columns.add(new ColumnMetadata(columnName, columnType, ordinalPosition++, false));
+                        columns.add(new ColumnMetadata(columnName, columnType, ordinalPosition, false));
+                        ordinalPosition++;
                     }
                 }
                 if (columns.isEmpty()) {
@@ -181,19 +183,21 @@ public class BaseJdbcClient
     public PartitionResult getPartitions(JdbcTableHandle jdbcTableHandle, TupleDomain tupleDomain)
     {
         // currently we don't support partitions
-        return new PartitionResult(ImmutableList.<Partition>of(new JdbcPartition(jdbcTableHandle)), tupleDomain);
+        return new PartitionResult(ImmutableList.<Partition>of(new JdbcPartition(jdbcTableHandle, tupleDomain)), TupleDomain.all());
     }
 
     @Override
     public SplitSource getPartitionSplits(JdbcPartition jdbcPartition)
     {
         JdbcTableHandle jdbcTableHandle = jdbcPartition.getJdbcTableHandle();
-        JdbcSplit jdbcSplit = new JdbcSplit(connectorId,
+        JdbcSplit jdbcSplit = new JdbcSplit(
+                connectorId,
                 jdbcTableHandle.getCatalogName(),
                 jdbcTableHandle.getSchemaName(),
                 jdbcTableHandle.getTableName(),
                 connectionUrl,
-                Maps.fromProperties(connectionProperties));
+                Maps.fromProperties(connectionProperties),
+                jdbcPartition.getTupleDomain());
         return new FixedSplitSource(connectorId, ImmutableList.of(jdbcSplit));
     }
 
@@ -211,11 +215,12 @@ public class BaseJdbcClient
     @Override
     public String buildSql(JdbcSplit split, List<JdbcColumnHandle> columnHandles)
     {
-        StringBuilder sql = new StringBuilder();
-        sql.append("SELECT ");
-        Joiner.on(", ").appendTo(sql, Iterables.transform(columnHandles, JdbcColumnHandle.nameGetter()));
-        sql.append(" FROM ").append(split.getSchemaName()).append(".").append(split.getTableName());
-        return sql.toString();
+        return new QueryBuilder(identifierQuote).buildSql(
+                split.getSchemaName(),
+                split.getTableName(),
+                columnHandles,
+                split.getTupleDomain());
+
     }
 
     protected ColumnType toColumnType(int jdbcType)

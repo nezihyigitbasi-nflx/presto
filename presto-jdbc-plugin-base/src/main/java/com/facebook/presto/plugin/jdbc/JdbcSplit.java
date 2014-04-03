@@ -15,6 +15,7 @@ package com.facebook.presto.plugin.jdbc;
 
 import com.facebook.presto.spi.HostAddress;
 import com.facebook.presto.spi.Split;
+import com.facebook.presto.spi.TupleDomain;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
@@ -34,6 +35,7 @@ public class JdbcSplit
     private final String tableName;
     private final String connectionUrl;
     private final Map<String, String> connectionProperties;
+    private final TupleDomain tupleDomain;
 
     @JsonCreator
     public JdbcSplit(
@@ -42,7 +44,8 @@ public class JdbcSplit
             @JsonProperty("schemaName") String schemaName,
             @JsonProperty("tableName") String tableName,
             @JsonProperty("connectionUrl") String connectionUrl,
-            @JsonProperty("connectionProperties") Map<String, String> connectionProperties)
+            @JsonProperty("connectionProperties") Map<String, String> connectionProperties,
+            @JsonProperty("tupleDomain") TupleDomain tupleDomain)
     {
         this.catalogName = catalogName;
         this.schemaName = schemaName;
@@ -50,6 +53,7 @@ public class JdbcSplit
         this.tableName = checkNotNull(tableName, "table name is null");
         this.connectionUrl = checkNotNull(connectionUrl, "connectionUrl is null");
         this.connectionProperties = ImmutableMap.copyOf(checkNotNull(connectionProperties, "connectionProperties is null"));
+        this.tupleDomain = checkNotNull(tupleDomain, "tupleDomain is null");
     }
 
     @JsonProperty
@@ -86,6 +90,12 @@ public class JdbcSplit
     public Map<String, String> getConnectionProperties()
     {
         return connectionProperties;
+    }
+
+    @JsonProperty
+    public TupleDomain getTupleDomain()
+    {
+        return tupleDomain;
     }
 
     @Override

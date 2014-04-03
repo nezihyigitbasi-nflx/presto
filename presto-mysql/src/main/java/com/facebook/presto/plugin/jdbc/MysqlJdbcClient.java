@@ -38,7 +38,7 @@ public class MysqlJdbcClient
     @Inject
     public MysqlJdbcClient(JdbcConnectorId connectorId, BaseJdbcConfig config)
     {
-        super(connectorId, config);
+        super(connectorId, config, "`");
     }
 
     @Override

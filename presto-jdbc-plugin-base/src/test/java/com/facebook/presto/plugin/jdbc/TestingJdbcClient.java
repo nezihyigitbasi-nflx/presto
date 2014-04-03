@@ -32,7 +32,12 @@ public final class TestingJdbcClient
             throws Exception
     {
         String connectionUrl = "jdbc:h2:mem:" + catalogName + ";DB_CLOSE_DELAY=-1";
-        JdbcClient jdbcClient = new BaseJdbcClient(new JdbcConnectorId("test"), new BaseJdbcConfig().setDriverClass("org.h2.Driver").setConnectionUrl(connectionUrl));
+        JdbcClient jdbcClient = new BaseJdbcClient(
+                new JdbcConnectorId("test"),
+                new BaseJdbcConfig()
+                        .setDriverClass("org.h2.Driver")
+                        .setConnectionUrl(connectionUrl),
+                "\"");
         Connection connection = DriverManager.getConnection(connectionUrl);
         connection.createStatement().execute("CREATE SCHEMA example");
 
@@ -58,5 +63,11 @@ public final class TestingJdbcClient
         PartitionResult partitions = jdbcClient.getPartitions(jdbcTableHandle, TupleDomain.all());
         SplitSource splits = jdbcClient.getPartitionSplits((JdbcPartition) Iterables.getOnlyElement(partitions.getPartitions()));
         return (JdbcSplit) Iterables.getOnlyElement(splits.getNextBatch(1000));
+    }
+
+    public static void main(String... args)
+            throws Exception
+    {
+        createTestingJdbcClient("/tmp/h2/foo");
     }
 }

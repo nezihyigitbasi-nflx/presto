@@ -23,10 +23,12 @@ public class JdbcPartition
         implements Partition
 {
     private final JdbcTableHandle jdbcTableHandle;
+    private final TupleDomain domain;
 
-    public JdbcPartition(JdbcTableHandle jdbcTableHandle)
+    public JdbcPartition(JdbcTableHandle jdbcTableHandle, TupleDomain domain)
     {
         this.jdbcTableHandle = checkNotNull(jdbcTableHandle, "jdbcTableHandle is null");
+        this.domain = checkNotNull(domain, "domain is null");;
     }
 
     @Override
@@ -43,7 +45,7 @@ public class JdbcPartition
     @Override
     public TupleDomain getTupleDomain()
     {
-        return TupleDomain.all();
+        return domain;
     }
 
     @Override
