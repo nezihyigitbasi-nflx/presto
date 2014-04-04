@@ -30,6 +30,7 @@ import static com.google.common.base.Charsets.UTF_8;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 
+@Test(singleThreaded = true)
 public class TestJdbcRecordSet
 {
     private TestingDatabase database;
