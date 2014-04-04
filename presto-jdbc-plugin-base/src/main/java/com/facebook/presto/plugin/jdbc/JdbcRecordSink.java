@@ -74,6 +74,7 @@ public class JdbcRecordSink
             if (batchSize >= 1000) {
                 statement.executeBatch();
                 connection.commit();
+                connection.setAutoCommit(false);
                 batchSize = 0;
             }
         }
