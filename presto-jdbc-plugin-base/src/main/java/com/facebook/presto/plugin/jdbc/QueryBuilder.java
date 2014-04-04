@@ -23,7 +23,6 @@ import com.google.common.collect.Iterables;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Pattern;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
@@ -31,8 +30,6 @@ import static com.google.common.collect.Iterables.getOnlyElement;
 
 public class QueryBuilder
 {
-    private static final Pattern SIMPLE_IDENTIFER = Pattern.compile("\\A[A-Za-z_][A-Za-z0-9_]*\\z");
-
     private final String quote;
 
     public QueryBuilder(String quote)
@@ -156,9 +153,6 @@ public class QueryBuilder
 
     private String quote(String name)
     {
-        if (SIMPLE_IDENTIFER.matcher(name).matches()) {
-            return name;
-        }
         return quote + name.toLowerCase() + quote;
     }
 
