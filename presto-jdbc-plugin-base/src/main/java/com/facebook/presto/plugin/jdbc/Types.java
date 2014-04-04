@@ -13,19 +13,21 @@
  */
 package com.facebook.presto.plugin.jdbc;
 
-import com.google.inject.Binder;
-import com.google.inject.Module;
-import com.google.inject.Scopes;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 
-import static io.airlift.configuration.ConfigurationModule.bindConfig;
-
-public class BaseJdbcClientModule
-        implements Module
+public final class Types
 {
-    @Override
-    public void configure(Binder binder)
+    private Types() {}
+
+    public static <A, B extends A> B checkType(A value, Class<B> target, String name)
     {
-        binder.bind(JdbcClient.class).to(BaseJdbcClient.class).in(Scopes.SINGLETON);
-        bindConfig(binder).to(BaseJdbcConfig.class);
+        checkNotNull(value, "%s is null", name);
+        checkArgument(target.isInstance(value),
+                "%s must be of type %s, not %s",
+                name,
+                target.getName(),
+                value.getClass().getName());
+        return target.cast(value);
     }
 }

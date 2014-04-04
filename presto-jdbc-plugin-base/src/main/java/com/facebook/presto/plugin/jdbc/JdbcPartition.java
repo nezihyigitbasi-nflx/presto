@@ -28,7 +28,7 @@ public class JdbcPartition
     public JdbcPartition(JdbcTableHandle jdbcTableHandle, TupleDomain domain)
     {
         this.jdbcTableHandle = checkNotNull(jdbcTableHandle, "jdbcTableHandle is null");
-        this.domain = checkNotNull(domain, "domain is null");;
+        this.domain = checkNotNull(domain, "domain is null");
     }
 
     @Override

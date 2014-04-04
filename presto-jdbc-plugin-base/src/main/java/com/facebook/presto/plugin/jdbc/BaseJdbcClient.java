@@ -27,8 +27,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 
-import javax.inject.Inject;
-
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.Driver;
@@ -52,7 +50,6 @@ public class BaseJdbcClient
     protected final Properties connectionProperties;
     protected final String identifierQuote;
 
-    @Inject
     public BaseJdbcClient(JdbcConnectorId connectorId, BaseJdbcConfig config, String identifierQuote)
     {
         this.connectorId = checkNotNull(connectorId, "connectorId is null").toString();
@@ -216,11 +213,11 @@ public class BaseJdbcClient
     public String buildSql(JdbcSplit split, List<JdbcColumnHandle> columnHandles)
     {
         return new QueryBuilder(identifierQuote).buildSql(
+                split.getCatalogName(),
                 split.getSchemaName(),
                 split.getTableName(),
                 columnHandles,
                 split.getTupleDomain());
-
     }
 
     protected ColumnType toColumnType(int jdbcType)

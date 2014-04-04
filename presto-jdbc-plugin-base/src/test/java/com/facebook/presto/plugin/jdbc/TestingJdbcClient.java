@@ -53,6 +53,10 @@ public final class TestingJdbcClient
         connection.createStatement().execute("CREATE SCHEMA tpch");
         connection.createStatement().execute("CREATE TABLE tpch.orders(orderkey bigint primary key, custkey bigint)");
         connection.createStatement().execute("CREATE TABLE tpch.lineitem(orderkey bigint primary key, partkey bigint)");
+
+        connection.commit();
+        connection.close();
+
         return jdbcClient;
     }
 
@@ -63,11 +67,5 @@ public final class TestingJdbcClient
         PartitionResult partitions = jdbcClient.getPartitions(jdbcTableHandle, TupleDomain.all());
         SplitSource splits = jdbcClient.getPartitionSplits((JdbcPartition) Iterables.getOnlyElement(partitions.getPartitions()));
         return (JdbcSplit) Iterables.getOnlyElement(splits.getNextBatch(1000));
-    }
-
-    public static void main(String... args)
-            throws Exception
-    {
-        createTestingJdbcClient("/tmp/h2/foo");
     }
 }

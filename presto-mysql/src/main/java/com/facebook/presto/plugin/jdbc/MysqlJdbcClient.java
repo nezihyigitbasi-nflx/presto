@@ -14,8 +14,6 @@
 package com.facebook.presto.plugin.jdbc;
 
 import com.facebook.presto.spi.SchemaTableName;
-import com.google.common.base.Function;
-import com.google.common.base.Joiner;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -103,28 +101,5 @@ public class MysqlJdbcClient
         catch (SQLException e) {
             throw Throwables.propagate(e);
         }
-    }
-
-    @Override
-    public String buildSql(JdbcSplit split, List<JdbcColumnHandle> columnHandles)
-    {
-        StringBuilder sql = new StringBuilder();
-        sql.append("SELECT ");
-        Joiner.on(", ").appendTo(sql, Iterables.transform(columnHandles, nameGetter()));
-        sql.append(" FROM `").append(split.getCatalogName()).append("`.`").append(split.getTableName()).append("`");
-        System.out.println(sql);
-        return sql.toString();
-    }
-
-    public static Function<JdbcColumnHandle, String> nameGetter()
-    {
-        return new Function<JdbcColumnHandle, String>()
-        {
-            @Override
-            public String apply(JdbcColumnHandle columnHandle)
-            {
-                return "`" + columnHandle.getColumnName() + "`";
-            }
-        };
     }
 }

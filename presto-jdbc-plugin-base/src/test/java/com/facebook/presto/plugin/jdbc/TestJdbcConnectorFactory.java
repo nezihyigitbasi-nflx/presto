@@ -14,7 +14,12 @@
 package com.facebook.presto.plugin.jdbc;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.inject.Binder;
+import com.google.inject.Module;
+import com.google.inject.Provides;
 import org.testng.annotations.Test;
+
+import static io.airlift.configuration.ConfigurationModule.bindConfig;
 
 public class TestJdbcConnectorFactory
 {
@@ -24,7 +29,7 @@ public class TestJdbcConnectorFactory
     {
         JdbcConnectorFactory connectorFactory = new JdbcConnectorFactory(
                 "test",
-                new BaseJdbcClientModule(),
+                new TestingH2JdbcModule(),
                 ImmutableMap.<String, String>of(),
                 getClass().getClassLoader());
 
@@ -32,5 +37,21 @@ public class TestJdbcConnectorFactory
                 "driver-class", "org.h2.Driver",
                 "connection-url", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1"
         ));
+    }
+
+    private static class TestingH2JdbcModule
+            implements Module
+    {
+        @Override
+        public void configure(Binder binder)
+        {
+            bindConfig(binder).to(BaseJdbcConfig.class);
+        }
+
+        @Provides
+        public JdbcClient provideJdbcClient(JdbcConnectorId id, BaseJdbcConfig config)
+        {
+            return new BaseJdbcClient(id, config, "\"");
+        }
     }
 }

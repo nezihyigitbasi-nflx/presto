@@ -31,7 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static com.google.common.base.Preconditions.checkArgument;
+import static com.facebook.presto.plugin.jdbc.Types.checkType;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class JdbcMetadata
@@ -69,8 +69,7 @@ public class JdbcMetadata
     @Override
     public ConnectorTableMetadata getTableMetadata(TableHandle table)
     {
-        checkArgument(table instanceof JdbcTableHandle, "tableHandle is not an instance of ExampleTableHandle");
-        JdbcTableHandle jdbcTableHandle = (JdbcTableHandle) table;
+        JdbcTableHandle jdbcTableHandle = checkType(table, JdbcTableHandle.class, "tableHandle");
 
         List<ColumnMetadata> columns = jdbcClient.getColumns(jdbcTableHandle);
         if (columns == null) {
@@ -115,9 +114,7 @@ public class JdbcMetadata
     @Override
     public Map<String, ColumnHandle> getColumnHandles(TableHandle tableHandle)
     {
-        checkNotNull(tableHandle, "tableHandle is null");
-        checkArgument(tableHandle instanceof JdbcTableHandle, "tableHandle is not an instance of ExampleTableHandle");
-        JdbcTableHandle jdbcTableHandle = (JdbcTableHandle) tableHandle;
+        JdbcTableHandle jdbcTableHandle = checkType(tableHandle, JdbcTableHandle.class, "tableHandle");
 
         List<ColumnMetadata> columns = jdbcClient.getColumns(jdbcTableHandle);
         if (columns == null) {
@@ -163,11 +160,7 @@ public class JdbcMetadata
     @Override
     public ColumnMetadata getColumnMetadata(TableHandle tableHandle, ColumnHandle columnHandle)
     {
-        checkNotNull(tableHandle, "tableHandle is null");
-        checkNotNull(columnHandle, "columnHandle is null");
-        checkArgument(tableHandle instanceof JdbcTableHandle, "tableHandle is not an instance of ExampleTableHandle");
-        checkArgument(columnHandle instanceof JdbcColumnHandle, "columnHandle is not an instance of ExampleColumnHandle");
-
-        return ((JdbcColumnHandle) columnHandle).getColumnMetadata();
+        checkType(tableHandle, JdbcTableHandle.class, "tableHandle");
+        return checkType(columnHandle, JdbcColumnHandle.class, "columnHandle").getColumnMetadata();
     }
 }

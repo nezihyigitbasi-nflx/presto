@@ -60,7 +60,12 @@ public class JdbcConnectorFactory
         try (ThreadContextClassLoader ignored = new ThreadContextClassLoader(classLoader)) {
             Bootstrap app = new Bootstrap(new JdbcModule(connectorId), module);
 
-            Injector injector = app.strictConfig().doNotInitializeLogging().setRequiredConfigurationProperties(requiredConfig).setOptionalConfigurationProperties(optionalConfig).initialize();
+            Injector injector = app
+                    .strictConfig()
+                    .doNotInitializeLogging()
+                    .setRequiredConfigurationProperties(requiredConfig)
+                    .setOptionalConfigurationProperties(optionalConfig)
+                    .initialize();
 
             JdbcMetadata jdbcMetadata = injector.getInstance(JdbcMetadata.class);
             JdbcSplitManager jdbcSplitManager = injector.getInstance(JdbcSplitManager.class);
