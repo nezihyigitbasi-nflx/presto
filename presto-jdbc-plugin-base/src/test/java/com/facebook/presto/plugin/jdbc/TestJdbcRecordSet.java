@@ -17,13 +17,13 @@ import com.facebook.presto.spi.RecordCursor;
 import com.facebook.presto.spi.RecordSet;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import static com.facebook.presto.plugin.jdbc.TestingJdbcClient.createTestingJdbcClient;
 import static com.facebook.presto.spi.ColumnType.LONG;
 import static com.facebook.presto.spi.ColumnType.STRING;
 import static com.google.common.base.Charsets.UTF_8;
@@ -32,6 +32,7 @@ import static org.testng.Assert.assertFalse;
 
 public class TestJdbcRecordSet
 {
+    private TestingDatabase database;
     private JdbcClient jdbcClient;
     private JdbcSplit split;
 
@@ -39,8 +40,16 @@ public class TestJdbcRecordSet
     public void setUp()
             throws Exception
     {
-        jdbcClient = createTestingJdbcClient("test" + System.nanoTime());
-        split = TestingJdbcClient.getSplit(jdbcClient, "example", "numbers");
+        database = new TestingDatabase();
+        jdbcClient = database.getJdbcClient();
+        split = database.getSplit("example", "numbers");
+    }
+
+    @AfterMethod
+    public void tearDown()
+            throws Exception
+    {
+        database.close();
     }
 
     @Test

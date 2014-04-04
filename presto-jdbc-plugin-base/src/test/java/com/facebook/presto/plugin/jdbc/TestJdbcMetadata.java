@@ -21,10 +21,10 @@ import com.facebook.presto.spi.TableNotFoundException;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import static com.facebook.presto.plugin.jdbc.TestingJdbcClient.createTestingJdbcClient;
 import static com.facebook.presto.spi.ColumnType.LONG;
 import static com.facebook.presto.spi.ColumnType.STRING;
 import static org.testng.Assert.assertEquals;
@@ -37,6 +37,7 @@ public class TestJdbcMetadata
 {
     private static final String CONNECTOR_ID = "TEST";
 
+    private TestingDatabase database;
     private JdbcMetadata metadata;
     private JdbcTableHandle tableHandle;
 
@@ -44,8 +45,16 @@ public class TestJdbcMetadata
     public void setUp()
             throws Exception
     {
-        metadata = new JdbcMetadata(new JdbcConnectorId(CONNECTOR_ID), createTestingJdbcClient("test" + System.nanoTime()));
+        database = new TestingDatabase();
+        metadata = new JdbcMetadata(new JdbcConnectorId(CONNECTOR_ID), database.getJdbcClient());
         tableHandle = metadata.getTableHandle(new SchemaTableName("example", "numbers"));
+    }
+
+    @AfterMethod
+    public void tearDown()
+            throws Exception
+    {
+        database.close();
     }
 
     @Test

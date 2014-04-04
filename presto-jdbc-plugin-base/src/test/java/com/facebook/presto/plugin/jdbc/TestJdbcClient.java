@@ -17,10 +17,10 @@ import com.facebook.presto.spi.ColumnMetadata;
 import com.facebook.presto.spi.SchemaTableName;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import static com.facebook.presto.plugin.jdbc.TestingJdbcClient.createTestingJdbcClient;
 import static com.facebook.presto.spi.ColumnType.LONG;
 import static com.facebook.presto.spi.ColumnType.STRING;
 import static org.testng.Assert.assertEquals;
@@ -29,6 +29,7 @@ import static org.testng.Assert.assertTrue;
 
 public class TestJdbcClient
 {
+    private TestingDatabase database;
     private String catalogName;
     private JdbcClient jdbcClient;
 
@@ -36,8 +37,16 @@ public class TestJdbcClient
     public void setUp()
             throws Exception
     {
-        catalogName = "test" + System.nanoTime();
-        jdbcClient = createTestingJdbcClient(catalogName);
+        database = new TestingDatabase();
+        catalogName = database.getConnection().getCatalog();
+        jdbcClient = database.getJdbcClient();
+    }
+
+    @AfterMethod
+    public void tearDown()
+            throws Exception
+    {
+        database.close();
     }
 
     @Test

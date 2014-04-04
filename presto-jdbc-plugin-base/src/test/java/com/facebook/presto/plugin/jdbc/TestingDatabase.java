@@ -17,28 +17,32 @@ import com.facebook.presto.spi.PartitionResult;
 import com.facebook.presto.spi.SchemaTableName;
 import com.facebook.presto.spi.SplitSource;
 import com.facebook.presto.spi.TupleDomain;
-import com.google.common.collect.Iterables;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.SQLException;
 
-public final class TestingJdbcClient
+import static com.google.common.collect.Iterables.getOnlyElement;
+
+public final class TestingDatabase
+        implements AutoCloseable
 {
-    private TestingJdbcClient()
-    {
-    }
+    private final Connection connection;
+    private final JdbcClient jdbcClient;
 
-    public static JdbcClient createTestingJdbcClient(String catalogName)
-            throws Exception
+    public TestingDatabase()
+            throws SQLException
     {
-        String connectionUrl = "jdbc:h2:mem:" + catalogName + ";DB_CLOSE_DELAY=-1";
-        JdbcClient jdbcClient = new BaseJdbcClient(
+        String connectionUrl = "jdbc:h2:mem:test" + System.nanoTime();
+        jdbcClient = new BaseJdbcClient(
                 new JdbcConnectorId("test"),
                 new BaseJdbcConfig()
                         .setDriverClass("org.h2.Driver")
                         .setConnectionUrl(connectionUrl),
-                "\"");
-        Connection connection = DriverManager.getConnection(connectionUrl);
+                "\""
+        );
+
+        connection = DriverManager.getConnection(connectionUrl);
         connection.createStatement().execute("CREATE SCHEMA example");
 
         connection.createStatement().execute("CREATE TABLE example.numbers(text varchar primary key, value bigint)");
@@ -55,17 +59,31 @@ public final class TestingJdbcClient
         connection.createStatement().execute("CREATE TABLE tpch.lineitem(orderkey bigint primary key, partkey bigint)");
 
         connection.commit();
-        connection.close();
+    }
 
+    @Override
+    public void close()
+            throws SQLException
+    {
+        connection.close();
+    }
+
+    public Connection getConnection()
+    {
+        return connection;
+    }
+
+    public JdbcClient getJdbcClient()
+    {
         return jdbcClient;
     }
 
-    public static JdbcSplit getSplit(JdbcClient jdbcClient, String schemaName, String tableName)
+    public JdbcSplit getSplit(String schemaName, String tableName)
             throws InterruptedException
     {
         JdbcTableHandle jdbcTableHandle = jdbcClient.getTableHandle(new SchemaTableName(schemaName, tableName));
         PartitionResult partitions = jdbcClient.getPartitions(jdbcTableHandle, TupleDomain.all());
-        SplitSource splits = jdbcClient.getPartitionSplits((JdbcPartition) Iterables.getOnlyElement(partitions.getPartitions()));
-        return (JdbcSplit) Iterables.getOnlyElement(splits.getNextBatch(1000));
+        SplitSource splits = jdbcClient.getPartitionSplits((JdbcPartition) getOnlyElement(partitions.getPartitions()));
+        return (JdbcSplit) getOnlyElement(splits.getNextBatch(1000));
     }
 }

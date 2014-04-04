@@ -28,6 +28,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import org.testng.Assert;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -35,7 +36,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.facebook.presto.plugin.jdbc.TestingJdbcClient.createTestingJdbcClient;
 import static com.google.common.base.Charsets.UTF_8;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -43,21 +43,30 @@ import static org.testng.Assert.assertTrue;
 
 public class TestJdbcRecordSetProvider
 {
+    private TestingDatabase database;
     private JdbcClient jdbcClient;
     private JdbcSplit split;
 
     private JdbcTableHandle table;
-    private JdbcColumnHandle textColumn = new JdbcColumnHandle("test", "text", ColumnType.STRING, 0);
-    private JdbcColumnHandle valueColumn = new JdbcColumnHandle("test", "value", ColumnType.LONG, 1);
+    private final JdbcColumnHandle textColumn = new JdbcColumnHandle("test", "text", ColumnType.STRING, 0);
+    private final JdbcColumnHandle valueColumn = new JdbcColumnHandle("test", "value", ColumnType.LONG, 1);
 
     @BeforeMethod
     public void setUp()
             throws Exception
     {
-        jdbcClient = createTestingJdbcClient("test" + System.nanoTime());
-        split = TestingJdbcClient.getSplit(jdbcClient, "example", "numbers");
+        database = new TestingDatabase();
+        jdbcClient = database.getJdbcClient();
+        split = database.getSplit("example", "numbers");
 
         table = jdbcClient.getTableHandle(new SchemaTableName("example", "numbers"));
+    }
+
+    @AfterMethod
+    public void tearDown()
+            throws Exception
+    {
+        database.close();
     }
 
     @Test
