@@ -59,7 +59,6 @@ public class QueryBuilder
                     .append(Joiner.on(" AND ").join(clauses));
         }
 
-        System.out.println(sql);
         return sql.toString();
     }
 
