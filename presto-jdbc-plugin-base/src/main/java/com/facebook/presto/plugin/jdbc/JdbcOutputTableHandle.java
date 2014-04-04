@@ -24,6 +24,7 @@ import javax.annotation.Nullable;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -45,7 +46,7 @@ public class JdbcOutputTableHandle
 
     @JsonCreator
     public JdbcOutputTableHandle(
-            @JsonProperty("clientId") String connectorId,
+            @JsonProperty("connectorId") String connectorId,
             @Nullable @JsonProperty("catalogName") String catalogName,
             @Nullable @JsonProperty("schemaName") String schemaName,
             @JsonProperty("tableName") String tableName,
@@ -138,5 +139,43 @@ public class JdbcOutputTableHandle
     public String toString()
     {
         return format("jdbc:%s.%s.%s", catalogName, schemaName, tableName);
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash(
+                connectorId,
+                catalogName,
+                schemaName,
+                tableName,
+                columnNames,
+                columnTypes,
+                tableOwner,
+                temporaryTableName,
+                connectionUrl,
+                connectionProperties);
+    }
+
+    @Override
+    public boolean equals(Object obj)
+    {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
+        JdbcOutputTableHandle other = (JdbcOutputTableHandle) obj;
+        return Objects.equals(this.connectorId, other.connectorId) &&
+                Objects.equals(this.catalogName, other.catalogName) &&
+                Objects.equals(this.schemaName, other.schemaName) &&
+                Objects.equals(this.tableName, other.tableName) &&
+                Objects.equals(this.columnNames, other.columnNames) &&
+                Objects.equals(this.columnTypes, other.columnTypes) &&
+                Objects.equals(this.tableOwner, other.tableOwner) &&
+                Objects.equals(this.temporaryTableName, other.temporaryTableName) &&
+                Objects.equals(this.connectionUrl, other.connectionUrl) &&
+                Objects.equals(this.connectionProperties, other.connectionProperties);
     }
 }
