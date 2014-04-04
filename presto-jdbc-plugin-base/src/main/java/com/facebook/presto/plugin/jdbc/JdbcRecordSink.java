@@ -71,8 +71,9 @@ public class JdbcRecordSink
             statement.addBatch();
             batchSize++;
 
-            if (batchSize >= 1000) {
+            if (batchSize >= 1) {
                 statement.executeBatch();
+                connection.commit();
                 batchSize = 0;
             }
         }
@@ -143,8 +144,8 @@ public class JdbcRecordSink
         try (Connection connection = this.connection) {
             if (batchSize > 0) {
                 statement.executeBatch();
+                connection.commit();
             }
-            connection.commit();
         }
         catch (SQLException e) {
             throw Throwables.propagate(e);
