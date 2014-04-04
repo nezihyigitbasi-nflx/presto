@@ -15,6 +15,7 @@ package com.facebook.presto.plugin.jdbc;
 
 import com.facebook.presto.spi.ColumnMetadata;
 import com.facebook.presto.spi.ColumnType;
+import com.facebook.presto.spi.ConnectorTableMetadata;
 import com.facebook.presto.spi.FixedSplitSource;
 import com.facebook.presto.spi.Partition;
 import com.facebook.presto.spi.PartitionResult;
@@ -34,6 +35,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -218,6 +220,30 @@ public class BaseJdbcClient
                 split.getTableName(),
                 columnHandles,
                 split.getTupleDomain());
+    }
+
+    @Override
+    public JdbcOutputTableHandle beginCreateTable(ConnectorTableMetadata tableMetadata)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void commitCreateTable(JdbcOutputTableHandle handle, Collection<String> fragments)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public String buildInsertSql(JdbcOutputTableHandle handle)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Connection getConnection(JdbcOutputTableHandle handle)
+    {
+        throw new UnsupportedOperationException();
     }
 
     protected ColumnType toColumnType(int jdbcType)

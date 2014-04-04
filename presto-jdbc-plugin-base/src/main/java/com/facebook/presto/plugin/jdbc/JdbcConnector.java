@@ -21,6 +21,8 @@ import com.facebook.presto.spi.ConnectorRecordSetProvider;
 import com.facebook.presto.spi.ConnectorRecordSinkProvider;
 import com.facebook.presto.spi.ConnectorSplitManager;
 
+import javax.inject.Inject;
+
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class JdbcConnector
@@ -30,13 +32,24 @@ public class JdbcConnector
     private final JdbcSplitManager jdbcSplitManager;
     private final JdbcRecordSetProvider jdbcRecordSetProvider;
     private final JdbcHandleResolver jdbcHandleResolver;
+    private final JdbcRecordSinkProvider jdbcRecordSinkProvider;
+    private final JdbcOutputHandleResolver jdbcOutputHandleResolver;
 
-    public JdbcConnector(JdbcMetadata jdbcMetadata, JdbcSplitManager jdbcSplitManager, JdbcRecordSetProvider jdbcRecordSetProvider, JdbcHandleResolver jdbcHandleResolver)
+    @Inject
+    public JdbcConnector(
+            JdbcMetadata jdbcMetadata,
+            JdbcSplitManager jdbcSplitManager,
+            JdbcRecordSetProvider jdbcRecordSetProvider,
+            JdbcHandleResolver jdbcHandleResolver,
+            JdbcRecordSinkProvider jdbcRecordSinkProvider,
+            JdbcOutputHandleResolver jdbcOutputHandleResolver)
     {
         this.jdbcMetadata = checkNotNull(jdbcMetadata, "jdbcMetadata is null");
         this.jdbcSplitManager = checkNotNull(jdbcSplitManager, "jdbcSplitManager is null");
         this.jdbcRecordSetProvider = checkNotNull(jdbcRecordSetProvider, "jdbcRecordSetProvider is null");
         this.jdbcHandleResolver = checkNotNull(jdbcHandleResolver, "jdbcHandleResolver is null");
+        this.jdbcRecordSinkProvider = checkNotNull(jdbcRecordSinkProvider, "jdbcRecordSinkProvider is null");
+        this.jdbcOutputHandleResolver = checkNotNull(jdbcOutputHandleResolver, "jdbcOutputHandleResolver is null");
     }
 
     @Override
@@ -66,12 +79,12 @@ public class JdbcConnector
     @Override
     public ConnectorRecordSinkProvider getRecordSinkProvider()
     {
-        throw new UnsupportedOperationException();
+        return jdbcRecordSinkProvider;
     }
 
     @Override
     public ConnectorOutputHandleResolver getOutputHandleResolver()
     {
-        throw new UnsupportedOperationException();
+        return jdbcOutputHandleResolver;
     }
 }

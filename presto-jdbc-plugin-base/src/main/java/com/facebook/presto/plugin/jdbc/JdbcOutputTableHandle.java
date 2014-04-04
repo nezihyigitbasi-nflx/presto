@@ -1,0 +1,142 @@
+/*
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.facebook.presto.plugin.jdbc;
+
+import com.facebook.presto.spi.ColumnType;
+import com.facebook.presto.spi.OutputTableHandle;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+
+import javax.annotation.Nullable;
+
+import java.util.List;
+import java.util.Map;
+
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static java.lang.String.format;
+
+public class JdbcOutputTableHandle
+        implements OutputTableHandle
+{
+    private final String connectorId;
+    private final String catalogName;
+    private final String schemaName;
+    private final String tableName;
+    private final List<String> columnNames;
+    private final List<ColumnType> columnTypes;
+    private final String tableOwner;
+    private final String temporaryTableName;
+    private final String connectionUrl;
+    private final Map<String, String> connectionProperties;
+
+    @JsonCreator
+    public JdbcOutputTableHandle(
+            @JsonProperty("clientId") String connectorId,
+            @Nullable @JsonProperty("catalogName") String catalogName,
+            @Nullable @JsonProperty("schemaName") String schemaName,
+            @JsonProperty("tableName") String tableName,
+            @JsonProperty("columnNames") List<String> columnNames,
+            @JsonProperty("columnTypes") List<ColumnType> columnTypes,
+            @JsonProperty("tableOwner") String tableOwner,
+            @JsonProperty("temporaryTableName") String temporaryTableName,
+            @JsonProperty("connectionUrl") String connectionUrl,
+            @JsonProperty("connectionProperties") Map<String, String> connectionProperties)
+    {
+        this.connectorId = checkNotNull(connectorId, "connectorId is null");
+        this.catalogName = catalogName;
+        this.schemaName = schemaName;
+        this.tableName = checkNotNull(tableName, "tableName is null");
+        this.tableOwner = checkNotNull(tableOwner, "tableOwner is null");
+        this.temporaryTableName = checkNotNull(temporaryTableName, "temporaryTableName is null");
+        this.connectionUrl = checkNotNull(connectionUrl, "connectionUrl is null");
+        this.connectionProperties = ImmutableMap.copyOf(checkNotNull(connectionProperties, "connectionProperties is null"));
+
+        checkNotNull(columnNames, "columnNames is null");
+        checkNotNull(columnTypes, "columnTypes is null");
+        checkArgument(columnNames.size() == columnTypes.size(), "columnNames and columnTypes sizes don't match");
+        this.columnNames = ImmutableList.copyOf(columnNames);
+        this.columnTypes = ImmutableList.copyOf(columnTypes);
+    }
+
+    @JsonProperty
+    public String getConnectorId()
+    {
+        return connectorId;
+    }
+
+    @Nullable
+    @JsonProperty
+    public String getCatalogName()
+    {
+        return catalogName;
+    }
+
+    @Nullable
+    @JsonProperty
+    public String getSchemaName()
+    {
+        return schemaName;
+    }
+
+    @JsonProperty
+    public String getTableName()
+    {
+        return tableName;
+    }
+
+    @JsonProperty
+    public List<String> getColumnNames()
+    {
+        return columnNames;
+    }
+
+    @JsonProperty
+    public List<ColumnType> getColumnTypes()
+    {
+        return columnTypes;
+    }
+
+    @JsonProperty
+    public String getTableOwner()
+    {
+        return tableOwner;
+    }
+
+    @JsonProperty
+    public String getTemporaryTableName()
+    {
+        return temporaryTableName;
+    }
+
+    @JsonProperty
+    public String getConnectionUrl()
+    {
+        return connectionUrl;
+    }
+
+    @JsonProperty
+    public Map<String, String> getConnectionProperties()
+    {
+        return connectionProperties;
+    }
+
+    @Override
+    public String toString()
+    {
+        return format("jdbc:%s.%s.%s", catalogName, schemaName, tableName);
+    }
+}

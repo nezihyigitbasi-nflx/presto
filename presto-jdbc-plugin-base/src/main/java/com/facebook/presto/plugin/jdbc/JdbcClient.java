@@ -14,6 +14,7 @@
 package com.facebook.presto.plugin.jdbc;
 
 import com.facebook.presto.spi.ColumnMetadata;
+import com.facebook.presto.spi.ConnectorTableMetadata;
 import com.facebook.presto.spi.PartitionResult;
 import com.facebook.presto.spi.SchemaTableName;
 import com.facebook.presto.spi.SplitSource;
@@ -21,6 +22,7 @@ import com.facebook.presto.spi.TupleDomain;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
@@ -42,4 +44,13 @@ public interface JdbcClient
             throws SQLException;
 
     String buildSql(JdbcSplit split, List<JdbcColumnHandle> columnHandles);
+
+    JdbcOutputTableHandle beginCreateTable(ConnectorTableMetadata tableMetadata);
+
+    void commitCreateTable(JdbcOutputTableHandle handle, Collection<String> fragments);
+
+    String buildInsertSql(JdbcOutputTableHandle handle);
+
+    Connection getConnection(JdbcOutputTableHandle handle)
+            throws SQLException;
 }

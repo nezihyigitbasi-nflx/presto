@@ -37,5 +37,8 @@ public class JdbcModule
         binder.bind(JdbcSplitManager.class).in(Scopes.SINGLETON);
         binder.bind(JdbcRecordSetProvider.class).in(Scopes.SINGLETON);
         binder.bind(JdbcHandleResolver.class).in(Scopes.SINGLETON);
+        binder.bind(JdbcRecordSinkProvider.class).in(Scopes.SINGLETON);
+        binder.bind(JdbcOutputHandleResolver.class).in(Scopes.SINGLETON);
+        binder.bind(JdbcConnector.class).in(Scopes.SINGLETON);
     }
 }

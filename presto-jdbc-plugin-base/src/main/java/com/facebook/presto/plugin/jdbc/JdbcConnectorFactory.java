@@ -67,12 +67,7 @@ public class JdbcConnectorFactory
                     .setOptionalConfigurationProperties(optionalConfig)
                     .initialize();
 
-            JdbcMetadata jdbcMetadata = injector.getInstance(JdbcMetadata.class);
-            JdbcSplitManager jdbcSplitManager = injector.getInstance(JdbcSplitManager.class);
-            JdbcRecordSetProvider jdbcRecordSetProvider = injector.getInstance(JdbcRecordSetProvider.class);
-            JdbcHandleResolver jdbcHandleResolver = injector.getInstance(JdbcHandleResolver.class);
-
-            return new JdbcConnector(jdbcMetadata, jdbcSplitManager, jdbcRecordSetProvider, jdbcHandleResolver);
+            return injector.getInstance(JdbcConnector.class);
         }
         catch (Exception e) {
             throw Throwables.propagate(e);

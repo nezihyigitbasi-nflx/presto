@@ -49,12 +49,12 @@ public class QueryBuilder
 
         sql.append(" FROM ");
         if (catalog != null) {
-            sql.append(catalog).append('.');
+            sql.append(quote(catalog)).append('.');
         }
         if (schema != null) {
-            sql.append(schema).append('.');
+            sql.append(quote(schema)).append('.');
         }
-        sql.append(table);
+        sql.append(quote(table));
 
         List<String> clauses = toConjuncts(columns, tupleDomain);
         if (!clauses.isEmpty()) {

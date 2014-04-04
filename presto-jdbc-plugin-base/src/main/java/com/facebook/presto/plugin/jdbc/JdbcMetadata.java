@@ -15,8 +15,9 @@ package com.facebook.presto.plugin.jdbc;
 
 import com.facebook.presto.spi.ColumnHandle;
 import com.facebook.presto.spi.ColumnMetadata;
+import com.facebook.presto.spi.ConnectorMetadata;
 import com.facebook.presto.spi.ConnectorTableMetadata;
-import com.facebook.presto.spi.ReadOnlyConnectorMetadata;
+import com.facebook.presto.spi.OutputTableHandle;
 import com.facebook.presto.spi.SchemaTableName;
 import com.facebook.presto.spi.SchemaTablePrefix;
 import com.facebook.presto.spi.TableHandle;
@@ -27,6 +28,7 @@ import com.google.common.collect.ImmutableSet;
 
 import javax.inject.Inject;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -35,10 +37,9 @@ import static com.facebook.presto.plugin.jdbc.Types.checkType;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class JdbcMetadata
-        extends ReadOnlyConnectorMetadata
+        implements ConnectorMetadata
 {
     private final String connectorId;
-
     private final JdbcClient jdbcClient;
 
     @Inject
@@ -162,5 +163,42 @@ public class JdbcMetadata
     {
         checkType(tableHandle, JdbcTableHandle.class, "tableHandle");
         return checkType(columnHandle, JdbcColumnHandle.class, "columnHandle").getColumnMetadata();
+    }
+
+    @Override
+    public boolean canCreateSampledTables()
+    {
+        return false;
+    }
+
+    @Override
+    public TableHandle createTable(ConnectorTableMetadata tableMetadata)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void dropTable(TableHandle tableHandle)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean canHandle(OutputTableHandle handle)
+    {
+        return (handle instanceof JdbcOutputTableHandle) && ((JdbcOutputTableHandle) handle).getConnectorId().equals(connectorId);
+    }
+
+    @Override
+    public OutputTableHandle beginCreateTable(ConnectorTableMetadata tableMetadata)
+    {
+        return jdbcClient.beginCreateTable(tableMetadata);
+    }
+
+    @Override
+    public void commitCreateTable(OutputTableHandle tableHandle, Collection<String> fragments)
+    {
+        JdbcOutputTableHandle handle = checkType(tableHandle, JdbcOutputTableHandle.class, "tableHandle");
+        jdbcClient.commitCreateTable(handle, fragments);
     }
 }
