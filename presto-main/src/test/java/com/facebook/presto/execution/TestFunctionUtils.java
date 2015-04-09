@@ -13,26 +13,20 @@
  */
 package com.facebook.presto.execution;
 
-import com.facebook.presto.Session;
-import com.facebook.presto.metadata.FunctionInfo;
-import com.facebook.presto.metadata.FunctionRegistry;
-import com.facebook.presto.metadata.Signature;
-import com.google.common.collect.ImmutableMap;
+import org.testng.annotations.Test;
 
-import java.util.Map;
+import static com.facebook.presto.execution.FunctionUtils.decodeFunctionSessionProperty;
+import static com.facebook.presto.execution.FunctionUtils.encodeFunctionSessionProperty;
+import static org.testng.Assert.assertEquals;
 
-public class NullFunctionDecoder
-        implements FunctionDecoder
+public class TestFunctionUtils
 {
-    @Override
-    public FunctionInfo decode(FunctionRegistry functionRegistry, String value)
-    {
-        return null;
-    }
+    private static final String FUNCTION = "CREATE FUNCTION test(a bigint) RETURNS bigint BEGIN DECLARE x bigint DEFAULT 99; RETURN x * a; END";
 
-    @Override
-    public Map<Signature, FunctionInfo> loadFunctions(FunctionRegistry functionRegistry, Session session)
+    @Test
+    public void testRoundTrip()
+            throws Exception
     {
-        return ImmutableMap.of();
+        assertEquals(decodeFunctionSessionProperty(encodeFunctionSessionProperty(FUNCTION)), FUNCTION);
     }
 }
