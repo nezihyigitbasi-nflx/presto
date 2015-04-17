@@ -26,6 +26,7 @@ import org.intellij.lang.annotations.Language;
 import org.testng.annotations.Test;
 
 import static com.facebook.presto.connector.informationSchema.InformationSchemaMetadata.INFORMATION_SCHEMA;
+import static com.facebook.presto.execution.FunctionUtils.FUNCTION_SESSION_PREFIX;
 import static com.facebook.presto.spi.type.BooleanType.BOOLEAN;
 import static com.facebook.presto.spi.type.VarcharType.VARCHAR;
 import static com.facebook.presto.sql.SqlFormatter.formatSql;
@@ -330,6 +331,22 @@ public abstract class AbstractTestDistributedQueries
         assertQueryTrue("CREATE TABLE test_symbol_aliasing AS SELECT 1 foo_1, 2 foo_2_4");
         assertQuery("SELECT foo_1, foo_2_4 FROM test_symbol_aliasing", "SELECT 1, 2");
         assertQueryTrue("DROP TABLE test_symbol_aliasing");
+    }
+
+    @Test
+    public void testCreateFunction()
+    {
+        MaterializedResult result = computeActual("" +
+                "CREATE FUNCTION test(a bigint)\n" +
+                "RETURNS bigint\n" +
+                "BEGIN\n" +
+                "  DECLARE x bigint DEFAULT 99;\n" +
+                "  RETURN x * a;\n" +
+                "END");
+        assertTrue((Boolean) Iterables.getOnlyElement(result).getField(0));
+        assertEquals(result.getSetSessionProperties().size(), 1);
+        String key = Iterables.getOnlyElement(result.getSetSessionProperties().keySet());
+        assertTrue(key.startsWith(FUNCTION_SESSION_PREFIX));
     }
 
     private static void assertContains(MaterializedResult actual, MaterializedResult expected)
