@@ -166,7 +166,7 @@ public class Console
 
                 // execute any complete statements
                 String sql = buffer.toString();
-                StatementSplitter splitter = new StatementSplitter(sql, ImmutableSet.of(";", "\\G"));
+                StatementSplitter splitter = new StatementSplitter(sql, ImmutableSet.of("//", "\\G"));
                 for (Statement split : splitter.getCompleteStatements()) {
                     Optional<Object> statement = getParsedStatement(split.statement());
                     if (statement.isPresent() && isSessionParameterChange(statement.get())) {
