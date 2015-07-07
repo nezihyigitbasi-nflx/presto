@@ -488,12 +488,7 @@ class AstBuilder
                 criteria = new JoinOn((Expression) visit(context.joinCriteria().booleanExpression()));
             }
             else if (context.joinCriteria().USING() != null) {
-                List<String> columns = context.joinCriteria()
-                        .identifier().stream()
-                        .map(ParseTree::getText)
-                        .collect(Collectors.toList());
-
-                criteria = new JoinUsing(columns);
+                criteria = new JoinUsing(visitIdentifiers(context.joinCriteria().identifier()));
             }
             else {
                 throw new IllegalArgumentException("Unsupported join criteria");
@@ -1066,12 +1061,14 @@ class AstBuilder
 
     private static QualifiedName getQualifiedName(SqlBaseParser.QualifiedNameContext context)
     {
-        List<String> parts = context
-                .identifier().stream()
+        return new QualifiedName(visitIdentifiers(context.identifier()));
+    }
+
+    private static List<String> visitIdentifiers(List<SqlBaseParser.IdentifierContext> identifiers)
+    {
+        return identifiers.stream()
                 .map(ParseTree::getText)
                 .collect(Collectors.toList());
-
-        return new QualifiedName(parts);
     }
 
     private static boolean isDistinct(SqlBaseParser.SetQuantifierContext setQuantifier)
@@ -1096,11 +1093,7 @@ class AstBuilder
         if (columnAliasesContext == null) {
             return null;
         }
-
-        return columnAliasesContext
-                .identifier().stream()
-                .map(ParseTree::getText)
-                .collect(Collectors.toList());
+        return visitIdentifiers(columnAliasesContext.identifier());
     }
 
     private static ArithmeticBinaryExpression.Type getArithmeticBinaryOperator(Token operator)
