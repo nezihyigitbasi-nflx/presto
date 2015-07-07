@@ -34,6 +34,11 @@ import com.facebook.presto.sql.tree.Join;
 import com.facebook.presto.sql.tree.JoinCriteria;
 import com.facebook.presto.sql.tree.JoinOn;
 import com.facebook.presto.sql.tree.JoinUsing;
+import com.facebook.presto.sql.tree.Merge;
+import com.facebook.presto.sql.tree.MergeDelete;
+import com.facebook.presto.sql.tree.MergeInsert;
+import com.facebook.presto.sql.tree.MergeOperation;
+import com.facebook.presto.sql.tree.MergeUpdate;
 import com.facebook.presto.sql.tree.NaturalJoin;
 import com.facebook.presto.sql.tree.Node;
 import com.facebook.presto.sql.tree.Query;
@@ -426,6 +431,93 @@ public final class SqlFormatter
                     }
                 }
             }
+
+            return null;
+        }
+
+        @Override
+        protected Void visitMerge(Merge node, Integer indent)
+        {
+            builder.append("MERGE INTO ")
+                    .append(node.getTarget());
+
+            node.getTargetAlias().ifPresent(value -> builder.append(" ").append(value));
+
+            builder.append("\n")
+                    .append(indentString(indent + 1))
+                    .append("USING ");
+
+            processRelation(node.getRelation(), indent + 2);
+
+            builder.append("\n")
+                    .append(indentString(indent + 1))
+                    .append("ON ")
+                    .append(formatExpression(node.getExpression()));
+
+            for (MergeOperation operation : node.getOperations()) {
+                builder.append("\n");
+                process(operation, indent);
+            }
+
+            return null;
+        }
+
+        @Override
+        protected Void visitMergeInsert(MergeInsert node, Integer indent)
+        {
+            builder.append("WHEN NOT MATCHED");
+            node.getExpression().ifPresent(value -> builder.append(" AND ").append(formatExpression(value)));
+
+            builder.append("\n")
+                    .append(indentString(indent + 1))
+                    .append("THEN INSERT ");
+
+            if (!node.getColumns().isEmpty()) {
+                builder.append("(");
+                Joiner.on(", ").appendTo(builder, node.getColumns());
+                builder.append(")");
+            }
+
+            builder.append("VALUES (");
+            Joiner.on(", ").appendTo(builder, transform(node.getValues(), ExpressionFormatter::formatExpression));
+            builder.append(")");
+
+            return null;
+        }
+
+        @Override
+        protected Void visitMergeUpdate(MergeUpdate node, Integer indent)
+        {
+            builder.append("WHEN MATCHED");
+            node.getExpression().ifPresent(value -> builder.append(" AND ").append(formatExpression(value)));
+
+            builder.append("\n")
+                    .append(indentString(indent + 1))
+                    .append("THEN UPDATE SET");
+
+            boolean first = true;
+            for (MergeUpdate.Assignment assignment : node.getAssignments()) {
+                builder.append("\n")
+                        .append(indentString(indent + 1))
+                        .append(first ? "  " : ", ")
+                        .append(assignment.getTarget())
+                        .append(" = ")
+                        .append(formatExpression(assignment.getValue()));
+                first = false;
+            }
+
+            return null;
+        }
+
+        @Override
+        protected Void visitMergeDelete(MergeDelete node, Integer indent)
+        {
+            builder.append("WHEN MATCHED");
+            node.getExpression().ifPresent(value -> builder.append(" AND ").append(formatExpression(value)));
+
+            builder.append("\n")
+                    .append(indentString(indent + 1))
+                    .append("THEN DELETE");
 
             return null;
         }

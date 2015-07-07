@@ -58,6 +58,11 @@ import com.facebook.presto.sql.tree.JoinUsing;
 import com.facebook.presto.sql.tree.LikePredicate;
 import com.facebook.presto.sql.tree.LogicalBinaryExpression;
 import com.facebook.presto.sql.tree.LongLiteral;
+import com.facebook.presto.sql.tree.Merge;
+import com.facebook.presto.sql.tree.MergeDelete;
+import com.facebook.presto.sql.tree.MergeInsert;
+import com.facebook.presto.sql.tree.MergeOperation;
+import com.facebook.presto.sql.tree.MergeUpdate;
 import com.facebook.presto.sql.tree.NaturalJoin;
 import com.facebook.presto.sql.tree.Node;
 import com.facebook.presto.sql.tree.NotExpression;
@@ -180,6 +185,45 @@ class AstBuilder
         return new Delete(
                 new Table(getQualifiedName(context.qualifiedName())),
                 visitIfPresent(context.booleanExpression(), Expression.class));
+    }
+
+    @Override
+    public Node visitMerge(@NotNull SqlBaseParser.MergeContext context)
+    {
+        return new Merge(
+                getQualifiedName(context.qualifiedName()),
+                getTextIfPresent(context.identifier()),
+                (Relation) visit(context.relation()),
+                (Expression) visit(context.expression()),
+                visit(context.mergeOperation(), MergeOperation.class));
+    }
+
+    @Override
+    public Node visitMergeInsert(@NotNull SqlBaseParser.MergeInsertContext context)
+    {
+        return new MergeInsert(
+                visitIfPresent(context.condition, Expression.class),
+                visitIdentifiers(context.targets),
+                visit(context.values, Expression.class));
+    }
+
+    @Override
+    public Node visitMergeUpdate(@NotNull SqlBaseParser.MergeUpdateContext context)
+    {
+        ImmutableList.Builder<MergeUpdate.Assignment> assignments = ImmutableList.builder();
+        for (int i = 0; i < context.targets.size(); i++) {
+            assignments.add(new MergeUpdate.Assignment(
+                    context.targets.get(i).getText(),
+                    (Expression) visit(context.values.get(i))));
+        }
+
+        return new MergeUpdate(visitIfPresent(context.condition, Expression.class), assignments.build());
+    }
+
+    @Override
+    public Node visitMergeDelete(@NotNull SqlBaseParser.MergeDeleteContext context)
+    {
+        return new MergeDelete(visitIfPresent(context.condition, Expression.class));
     }
 
     @Override

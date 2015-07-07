@@ -165,6 +165,16 @@ public class TestStatementBuilder
         printStatement("create or replace view foo as select 123 from t");
 
         printStatement("drop view foo");
+
+        printStatement("" +
+                "merge into inventory as i\n" +
+                "using changes as c\n" +
+                "on i.part = c.part\n" +
+                "when matched and c.action = 'mod' then\n" +
+                "update set qty = qty + c.qty\n" +
+                "when matched and c.action = 'del' then delete\n" +
+                "when not matched and c.action = 'new' then\n" +
+                "insert (part, qty) values (c.part, c.qty)");
     }
 
     @Test

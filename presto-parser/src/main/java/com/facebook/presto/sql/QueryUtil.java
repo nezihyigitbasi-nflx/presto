@@ -56,6 +56,11 @@ public final class QueryUtil
         return new QualifiedNameReference(QualifiedName.of(name));
     }
 
+    public static Expression nameReference(String first, String... rest)
+    {
+        return new QualifiedNameReference(QualifiedName.of(first, rest));
+    }
+
     public static SelectItem unaliasedName(String name)
     {
         return new SingleColumn(nameReference(name));
@@ -128,6 +133,11 @@ public final class QueryUtil
     public static Row row(Expression... values)
     {
         return new Row(ImmutableList.copyOf(values));
+    }
+
+    public static Relation aliased(Relation relation, String alias)
+    {
+        return new AliasedRelation(relation, alias, null);
     }
 
     public static Relation aliased(Relation relation, String alias, List<String> columnAliases)

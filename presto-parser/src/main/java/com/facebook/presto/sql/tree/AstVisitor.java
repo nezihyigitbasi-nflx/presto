@@ -417,6 +417,26 @@ public abstract class AstVisitor<R, C>
         return visitNode(node, context);
     }
 
+    protected R visitMergeOperation(MergeOperation node, C context)
+    {
+        return visitNode(node, context);
+    }
+
+    protected R visitMergeInsert(MergeInsert node, C context)
+    {
+        return visitNode(node, context);
+    }
+
+    protected R visitMergeUpdate(MergeUpdate node, C context)
+    {
+        return visitNode(node, context);
+    }
+
+    protected R visitMergeDelete(MergeDelete node, C context)
+    {
+        return visitNode(node, context);
+    }
+
     protected R visitTableElement(TableElement node, C context)
     {
         return visitNode(node, context);
@@ -463,6 +483,11 @@ public abstract class AstVisitor<R, C>
     }
 
     protected R visitDelete(Delete node, C context)
+    {
+        return visitStatement(node, context);
+    }
+
+    protected R visitMerge(Merge node, C context)
     {
         return visitStatement(node, context);
     }

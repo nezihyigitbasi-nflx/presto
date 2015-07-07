@@ -43,6 +43,10 @@ import com.facebook.presto.sql.tree.JoinCriteria;
 import com.facebook.presto.sql.tree.JoinOn;
 import com.facebook.presto.sql.tree.LogicalBinaryExpression;
 import com.facebook.presto.sql.tree.LongLiteral;
+import com.facebook.presto.sql.tree.Merge;
+import com.facebook.presto.sql.tree.MergeDelete;
+import com.facebook.presto.sql.tree.MergeInsert;
+import com.facebook.presto.sql.tree.MergeUpdate;
 import com.facebook.presto.sql.tree.NaturalJoin;
 import com.facebook.presto.sql.tree.Node;
 import com.facebook.presto.sql.tree.NotExpression;
@@ -77,6 +81,9 @@ import org.testng.annotations.Test;
 
 import java.util.Optional;
 
+import static com.facebook.presto.sql.QueryUtil.aliased;
+import static com.facebook.presto.sql.QueryUtil.equal;
+import static com.facebook.presto.sql.QueryUtil.nameReference;
 import static com.facebook.presto.sql.QueryUtil.query;
 import static com.facebook.presto.sql.QueryUtil.row;
 import static com.facebook.presto.sql.QueryUtil.selectList;
@@ -708,6 +715,42 @@ public class TestSqlParser
                 new ComparisonExpression(ComparisonExpression.Type.EQUAL,
                         new QualifiedNameReference(QualifiedName.of("a")),
                         new QualifiedNameReference(QualifiedName.of("b"))))));
+    }
+
+    @Test
+    public void testMerge()
+    {
+        assertStatement("" +
+                        "MERGE INTO inventory AS i\n" +
+                        "  USING changes AS c\n" +
+                        "  ON i.part = c.part\n" +
+                        "WHEN MATCHED AND c.action = 'mod'\n" +
+                        "  THEN UPDATE SET\n" +
+                        "    qty = qty + c.qty\n" +
+                        "  , ts = CURRENT_TIMESTAMP\n" +
+                        "WHEN MATCHED AND c.action = 'del'\n" +
+                        "  THEN DELETE\n" +
+                        "WHEN NOT MATCHED AND c.action = 'new'\n" +
+                        "  THEN INSERT (part, qty) VALUES (c.part, c.qty)",
+                new Merge(
+                        QualifiedName.of("inventory"),
+                        Optional.of("i"),
+                        aliased(table(QualifiedName.of("changes")), "c"),
+                        equal(nameReference("i", "part"), nameReference("c", "part")),
+                        ImmutableList.of(
+                                new MergeUpdate(
+                                        Optional.of(equal(nameReference("c", "action"), new StringLiteral("mod"))),
+                                        ImmutableList.of(
+                                                new MergeUpdate.Assignment("qty", new ArithmeticBinaryExpression(
+                                                        ArithmeticBinaryExpression.Type.ADD,
+                                                        nameReference("qty"),
+                                                        nameReference("c", "qty"))),
+                                                new MergeUpdate.Assignment("ts", new CurrentTime(CurrentTime.Type.TIMESTAMP)))),
+                                new MergeDelete(Optional.of(equal(nameReference("c", "action"), new StringLiteral("del")))),
+                                new MergeInsert(
+                                        Optional.of(equal(nameReference("c", "action"), new StringLiteral("new"))),
+                                        ImmutableList.of("part", "qty"),
+                                        ImmutableList.of(nameReference("c", "part"), nameReference("c", "qty"))))));
     }
 
     @Test

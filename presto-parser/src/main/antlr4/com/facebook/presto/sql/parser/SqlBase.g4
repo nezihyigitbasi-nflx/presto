@@ -36,6 +36,8 @@ statement
     | DROP TABLE (IF EXISTS)? qualifiedName                            #dropTable
     | INSERT INTO qualifiedName query                                  #insertInto
     | DELETE FROM qualifiedName (WHERE booleanExpression)?             #delete
+    | MERGE INTO qualifiedName (AS? identifier)?
+        USING relation ON expression mergeOperation+                   #merge
     | ALTER TABLE from=qualifiedName RENAME TO to=qualifiedName        #renameTable
     | ALTER TABLE tableName=qualifiedName
         RENAME COLUMN from=identifier TO to=identifier                 #renameColumn
@@ -297,6 +299,15 @@ frameBound
     | expression boundType=(PRECEDING | FOLLOWING)  #boundedFrame // expression should be unsignedLiteral
     ;
 
+mergeOperation
+    : WHEN MATCHED (AND condition=expression)? THEN
+        UPDATE SET targets+=identifier '=' values+=expression
+          (',' targets+=identifier '=' values+=expression)*                 #mergeUpdate
+    | WHEN MATCHED (AND condition=expression)? THEN DELETE                  #mergeDelete
+    | WHEN NOT MATCHED (AND condition=expression)? THEN
+        INSERT ('(' targets+=identifier (',' targets+=identifier)* ')')?
+        VALUES '(' values+=expression (',' values+=expression)* ')'         #mergeInsert
+    ;
 
 explainOption
     : FORMAT value=(TEXT | GRAPHVIZ | JSON)  #explainFormat
@@ -428,8 +439,11 @@ TABLE: 'TABLE';
 VIEW: 'VIEW';
 REPLACE: 'REPLACE';
 INSERT: 'INSERT';
+UPDATE: 'UPDATE';
 DELETE: 'DELETE';
+MERGE: 'MERGE';
 INTO: 'INTO';
+MATCHED: 'MATCHED';
 CONSTRAINT: 'CONSTRAINT';
 DESCRIBE: 'DESCRIBE';
 EXPLAIN: 'EXPLAIN';
