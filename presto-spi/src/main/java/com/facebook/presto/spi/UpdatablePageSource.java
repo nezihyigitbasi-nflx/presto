@@ -21,9 +21,22 @@ import java.util.Collection;
 public interface UpdatablePageSource
         extends ConnectorPageSource
 {
+    default void insertRows(Page page)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    default void updateRows(Page page)
+    {
+        throw new UnsupportedOperationException();
+    }
+
     void deleteRows(Block rowIds);
 
     Collection<Slice> commit();
 
     default void rollback() {}
 }
+/*
+ rowId, rule1-v1, rule1-v1, rule2-v1, rule3-v1
+ */

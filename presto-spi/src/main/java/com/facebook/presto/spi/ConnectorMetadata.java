@@ -153,9 +153,9 @@ public interface ConnectorMetadata
     }
 
     /**
-     * Get the column handle that will generate row IDs for the delete operation.
-     * These IDs will be passed to the {@code deleteRows()} method of the
-     * {@link UpdatablePageSource} that created them.
+     * Get the column handle that will generate row IDs for the update operation.
+     * These IDs will be passed to the {@code deleteRows()} and {@code updateRows()}
+     * methods of the {@link UpdatablePageSource} that created them.
      */
     default ColumnHandle getUpdateRowIdColumnHandle(ConnectorTableHandle tableHandle)
     {
@@ -184,6 +184,29 @@ public interface ConnectorMetadata
      * Rollback delete query
      */
     default void rollbackDelete(ConnectorTableHandle tableHandle) {}
+
+    /**
+     * Begin merge query
+     */
+    default ConnectorTableHandle beginMerge(ConnectorTableHandle tableHandle)
+    {
+        throw new PrestoException(NOT_SUPPORTED, "This connector does not support merges");
+    }
+
+    /**
+     * Commit merge query
+     *
+     * @param fragments all fragments returned by {@link UpdatablePageSource#commit()}
+     */
+    default void commitMerge(ConnectorTableHandle tableHandle, Collection<Slice> fragments)
+    {
+        throw new PrestoException(NOT_SUPPORTED, "This connector does not support merges");
+    }
+
+    /**
+     * Rollback merge query
+     */
+    default void rollbackMerge(ConnectorTableHandle tableHandle) {}
 
     /**
      * Create the specified view. The data for the view is opaque to the connector.

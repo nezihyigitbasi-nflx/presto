@@ -413,6 +413,18 @@ public class RaptorMetadata
     }
 
     @Override
+    public ConnectorTableHandle beginMerge(ConnectorTableHandle tableHandle)
+    {
+        return beginDelete(tableHandle);
+    }
+
+    @Override
+    public void commitMerge(ConnectorTableHandle tableHandle, Collection<Slice> fragments)
+    {
+        commitDelete(tableHandle, fragments);
+    }
+
+    @Override
     public void createView(ConnectorSession session, SchemaTableName viewName, String viewData, boolean replace)
     {
         String schemaName = viewName.getSchemaName();
