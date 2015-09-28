@@ -36,6 +36,7 @@ import org.skife.jdbi.v2.Query;
 import org.skife.jdbi.v2.ResultIterator;
 import org.skife.jdbi.v2.TransactionCallback;
 import org.skife.jdbi.v2.exceptions.DBIException;
+import org.skife.jdbi.v2.tweak.HandleCallback;
 import org.skife.jdbi.v2.util.ByteArrayMapper;
 import org.skife.jdbi.v2.util.LongMapper;
 
@@ -127,22 +128,23 @@ public class DatabaseShardManager
                 "  UNIQUE (shard_uuid)\n" +
                 ")";
 
-        try (Handle handle = dbi.open()) {
+        runQuery(handle -> {
             handle.execute(sql);
-        }
+            return null;
+        });
     }
 
     @Override
     public void commitShards(long tableId, List<ColumnInfo> columns, Collection<ShardInfo> shards, Optional<String> externalBatchId)
     {
         // attempt to fail up front with a proper exception
-        if (externalBatchId.isPresent() && dao.externalBatchExists(externalBatchId.get())) {
+        if (externalBatchId.isPresent() && runQuery(handle -> dao.externalBatchExists(externalBatchId.get()))) {
             throw new PrestoException(RAPTOR_EXTERNAL_BATCH_ALREADY_EXISTS, "External batch already exists: " + externalBatchId.get());
         }
 
         Map<String, Integer> nodeIds = toNodeIdMap(shards);
 
-        dbi.inTransaction((handle, status) -> {
+        runTransaction((handle, status) -> {
             ShardManagerDao dao = handle.attach(ShardManagerDao.class);
 
             insertShardsAndIndex(tableId, columns, shards, nodeIds, handle);
@@ -331,13 +333,22 @@ public class DatabaseShardManager
                 ") x\n" +
                 "JOIN nodes n ON (x.node_id = n.node_id)";
 
-        try (Handle handle = dbi.open()) {
-            return handle.createQuery(sql)
-                    .fold(ImmutableMap.<String, Long>builder(), (map, rs, ctx) -> {
-                        map.put(rs.getString("node_identifier"), rs.getLong("size"));
-                        return map;
-                    })
-                    .build();
+        return runQuery(handle -> handle.createQuery(sql)
+                .fold(ImmutableMap.<String, Long>builder(), (map, rs, ctx) -> {
+                    map.put(rs.getString("node_identifier"), rs.getLong("size"));
+                    return map;
+                })
+                .build());
+    }
+
+    private <T> T runQuery(HandleCallback<T> callback)
+    {
+        try {
+            return dbi.withHandle(callback);
+        }
+        catch (DBIException e) {
+            propagateIfInstanceOf(e.getCause(), PrestoException.class);
+            throw new PrestoException(RAPTOR_ERROR, "Failed to perform metadata operation", e);
         }
     }
 
