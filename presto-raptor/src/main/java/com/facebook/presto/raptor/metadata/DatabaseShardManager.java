@@ -138,7 +138,7 @@ public class DatabaseShardManager
     public void commitShards(long tableId, List<ColumnInfo> columns, Collection<ShardInfo> shards, Optional<String> externalBatchId)
     {
         // attempt to fail up front with a proper exception
-        if (externalBatchId.isPresent() && runQuery(handle -> dao.externalBatchExists(externalBatchId.get()))) {
+        if (externalBatchId.isPresent() && externalBatchExists(externalBatchId.get())) {
             throw new PrestoException(RAPTOR_EXTERNAL_BATCH_ALREADY_EXISTS, "External batch already exists: " + externalBatchId.get());
         }
 
@@ -154,6 +154,12 @@ public class DatabaseShardManager
             }
             return null;
         });
+    }
+
+    private boolean externalBatchExists(String id)
+    {
+        return runQuery(handle -> handle.attach(ShardManagerDao.class)
+                .externalBatchExists(id));
     }
 
     @Override
