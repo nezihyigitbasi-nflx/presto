@@ -526,4 +526,19 @@ public abstract class AstVisitor<R, C>
     {
         return visitStatement(node, context);
     }
+
+    protected R visitRollbackToSavepoint(RollbackToSavepoint node, C context)
+    {
+        return visitStatement(node, context);
+    }
+
+    protected R visitSavepoint(Savepoint node, C context)
+    {
+        return visitStatement(node, context);
+    }
+
+    protected R visitReleaseSavepoint(ReleaseSavepoint node, C context)
+    {
+        return visitStatement(node, context);
+    }
 }
