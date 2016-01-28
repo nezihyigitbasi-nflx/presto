@@ -40,6 +40,7 @@ public class StorageManagerConfig
     private Duration shardRecoveryTimeout = new Duration(30, TimeUnit.SECONDS);
     private Duration missingShardDiscoveryInterval = new Duration(5, TimeUnit.MINUTES);
     private boolean compactionEnabled = true;
+    private Duration balancerInterval = new Duration(1, TimeUnit.HOURS);
     private Duration compactionInterval = new Duration(1, TimeUnit.HOURS);
     private Duration shardEjectorInterval = new Duration(4, TimeUnit.HOURS);
     private DataSize orcMaxMergeDistance = new DataSize(1, MEGABYTE);
@@ -143,6 +144,19 @@ public class StorageManagerConfig
     public StorageManagerConfig setMissingShardDiscoveryInterval(Duration missingShardDiscoveryInterval)
     {
         this.missingShardDiscoveryInterval = missingShardDiscoveryInterval;
+        return this;
+    }
+
+    public Duration getBalancerInterval()
+    {
+        return balancerInterval;
+    }
+
+    @Config("storage.balancer-interval")
+    @ConfigDescription("How often to run the global shard balancer")
+    public StorageManagerConfig setBalancerInterval(Duration balancerInterval)
+    {
+        this.balancerInterval = balancerInterval;
         return this;
     }
 
