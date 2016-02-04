@@ -26,13 +26,17 @@ import org.testng.annotations.Test;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import static com.facebook.presto.SessionTestUtils.TEST_SESSION;
+import static com.facebook.presto.spi.StandardErrorCode.SAVEPOINT_NOT_FOUND;
 import static com.facebook.presto.spi.StandardErrorCode.TRANSACTION_ALREADY_ABORTED;
+import static com.facebook.presto.spi.StandardErrorCode.TRANSACTION_ROLLBACK;
 import static io.airlift.concurrent.Threads.daemonThreadsNamed;
+import static io.airlift.testing.Assertions.assertInstanceOf;
 import static java.util.concurrent.Executors.newCachedThreadPool;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 import static org.testng.Assert.assertEquals;
@@ -177,6 +181,119 @@ public class TestTransactionManager
             TimeUnit.MILLISECONDS.sleep(100);
 
             assertTrue(transactionManager.getAllTransactionInfos().isEmpty());
+        }
+    }
+
+    @Test
+    public void testForcedRollback()
+            throws Exception
+    {
+        try (IdleCheckExecutor executor = new IdleCheckExecutor()) {
+            TransactionManager transactionManager = TransactionManager.create(new TransactionManagerConfig(), executor.getExecutor(), finishingExecutor);
+
+            Connector test = new TpchConnectorFactory(new InMemoryNodeManager()).create("test", ImmutableMap.of());
+            transactionManager.addConnector("test", test);
+
+            TransactionId transactionId = transactionManager.beginTransaction(false);
+
+            transactionManager.fail(transactionId);
+
+            try {
+                transactionManager.asyncCommit(transactionId).join();
+                fail("expected exception");
+            }
+            catch (CompletionException e) {
+                assertInstanceOf(e.getCause(), PrestoException.class);
+                assertEquals(((PrestoException) e.getCause()).getErrorCode(), TRANSACTION_ROLLBACK.toErrorCode());
+            }
+        }
+    }
+
+    @Test
+    public void testSavepoints()
+            throws Exception
+    {
+        try (IdleCheckExecutor executor = new IdleCheckExecutor()) {
+            TransactionManager transactionManager = TransactionManager.create(new TransactionManagerConfig(), executor.getExecutor(), finishingExecutor);
+
+            Connector test = new TpchConnectorFactory(new InMemoryNodeManager()).create("test", ImmutableMap.of());
+            transactionManager.addConnector("test", test);
+
+            // begin transaction
+            TransactionId transactionId = transactionManager.beginTransaction(false);
+
+            // create savepoint before selecting the writable connector
+            transactionManager.savepoint(transactionId, "apple");
+
+            // select the writable connector
+            transactionManager.getMetadata(transactionId, "test");
+            transactionManager.checkConnectorWrite(transactionId, "test");
+
+            // create more savepoints
+            transactionManager.savepoint(transactionId, "orange");
+            transactionManager.savepoint(transactionId, "grape");
+
+            // fail the transaction
+            transactionManager.fail(transactionId);
+
+            // verify we are failed
+            assertTransactionAborted(transactionManager, transactionId);
+
+            // rollback to the middle savepoint
+            transactionManager.rollbackToSavepoint(transactionId, "orange");
+
+            // verify we are not failed
+            transactionManager.checkAndSetActive(transactionId);
+
+            // verify previous top savepoint is not available
+            assertSavepointNotFound(() -> transactionManager.rollbackToSavepoint(transactionId, "grape"));
+            assertSavepointNotFound(() -> transactionManager.releaseSavepoint(transactionId, "grape"));
+
+            // release most recent savepoint
+            transactionManager.releaseSavepoint(transactionId, "orange");
+
+            // verify savepoint is not available
+            assertSavepointNotFound(() -> transactionManager.rollbackToSavepoint(transactionId, "orange"));
+            assertSavepointNotFound(() -> transactionManager.releaseSavepoint(transactionId, "orange"));
+
+            // fail the transaction
+            transactionManager.fail(transactionId);
+
+            // verify we are failed
+            assertTransactionAborted(transactionManager, transactionId);
+
+            // rollback to first savepoint
+            transactionManager.rollbackToSavepoint(transactionId, "apple");
+
+            // verify we are not failed
+            transactionManager.checkAndSetActive(transactionId);
+
+            // verify savepoint is not available
+            assertSavepointNotFound(() -> transactionManager.rollbackToSavepoint(transactionId, "orange"));
+            assertSavepointNotFound(() -> transactionManager.releaseSavepoint(transactionId, "orange"));
+
+            // commit transaction
+            transactionManager.asyncCommit(transactionId).join();
+        }
+    }
+
+    private static void assertTransactionAborted(TransactionManager transactionManager, TransactionId transactionId)
+    {
+        try {
+            transactionManager.checkAndSetActive(transactionId);
+        }
+        catch (PrestoException e) {
+            assertEquals(e.getErrorCode(), TRANSACTION_ALREADY_ABORTED.toErrorCode());
+        }
+    }
+
+    private static void assertSavepointNotFound(Runnable runnable)
+    {
+        try {
+            runnable.run();
+        }
+        catch (PrestoException e) {
+            assertEquals(e.getErrorCode(), SAVEPOINT_NOT_FOUND.toErrorCode());
         }
     }
 

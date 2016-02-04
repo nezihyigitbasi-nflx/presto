@@ -24,6 +24,7 @@ import com.facebook.presto.spi.ConnectorSplit;
 import com.facebook.presto.spi.ConnectorTableHandle;
 import com.facebook.presto.spi.ConnectorTableLayoutHandle;
 import com.facebook.presto.spi.connector.ConnectorPartitioningHandle;
+import com.facebook.presto.spi.connector.ConnectorSavepointHandle;
 import com.facebook.presto.spi.connector.ConnectorTransactionHandle;
 
 import javax.inject.Inject;
@@ -103,6 +104,11 @@ public class HandleResolver
         return getId(transactionHandle, ConnectorHandleResolver::getTransactionHandleClass);
     }
 
+    public String getId(ConnectorSavepointHandle savepointHandle)
+    {
+        return getId(savepointHandle, ConnectorHandleResolver::getSavepointHandleClass);
+    }
+
     public Class<? extends ConnectorTableHandle> getTableHandleClass(String id)
     {
         return resolverFor(id).getTableHandleClass();
@@ -146,6 +152,11 @@ public class HandleResolver
     public Class<? extends ConnectorTransactionHandle> getTransactionHandleClass(String id)
     {
         return resolverFor(id).getTransactionHandleClass();
+    }
+
+    public Class<? extends ConnectorSavepointHandle> getSavepointHandleClass(String id)
+    {
+        return resolverFor(id).getSavepointHandleClass();
     }
 
     public ConnectorHandleResolver resolverFor(String id)
