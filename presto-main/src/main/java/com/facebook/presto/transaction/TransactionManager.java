@@ -26,6 +26,7 @@ import io.airlift.log.Logger;
 import io.airlift.units.Duration;
 import org.joda.time.DateTime;
 
+import javax.annotation.concurrent.GuardedBy;
 import javax.annotation.concurrent.ThreadSafe;
 
 import java.util.Iterator;
@@ -50,6 +51,7 @@ import static com.facebook.presto.spi.StandardErrorCode.UNKNOWN_TRANSACTION;
 import static com.facebook.presto.util.ImmutableCollectors.toImmutableList;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.base.Verify.verify;
 import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
 import static io.airlift.concurrent.MoreFutures.allAsList;
 import static io.airlift.concurrent.MoreFutures.failedFuture;
@@ -252,6 +254,13 @@ public class TransactionManager
     @ThreadSafe
     private static class TransactionMetadata
     {
+        private enum State
+        {
+            ACTIVE,
+            COMMITTED,
+            ABORTED
+        }
+
         private final DateTime createTime = DateTime.now();
         private final TransactionId transactionId;
         private final IsolationLevel isolationLevel;
@@ -260,8 +269,10 @@ public class TransactionManager
         private final Map<String, ConnectorTransactionMetadata> connectorIdToMetadata = new ConcurrentHashMap<>();
         private final AtomicReference<String> writtenConnectorId = new AtomicReference<>();
         private final Executor finishingExecutor;
-        private final AtomicReference<Boolean> completedSuccessfully = new AtomicReference<>();
         private final AtomicReference<Long> idleStartTime = new AtomicReference<>();
+
+        @GuardedBy("this")
+        private State state = State.ACTIVE;
 
         public TransactionMetadata(TransactionId transactionId, IsolationLevel isolationLevel, boolean readOnly, boolean autoCommitContext, Executor finishingExecutor)
         {
@@ -288,17 +299,15 @@ public class TransactionManager
             return idleStartTime != null && Duration.nanosSince(idleStartTime).compareTo(idleTimeout) > 0;
         }
 
-        public void checkOpenTransaction()
+        public synchronized void checkOpenTransaction()
         {
-            Boolean completedStatus = this.completedSuccessfully.get();
-            if (completedStatus != null) {
-                if (completedStatus) {
-                    // Should not happen normally
+            switch (state) {
+                case ACTIVE:
+                    return;
+                case COMMITTED:
                     throw new IllegalStateException("Current transaction already committed");
-                }
-                else {
+                case ABORTED:
                     throw new PrestoException(TRANSACTION_ALREADY_ABORTED, "Current transaction is aborted, commands ignored until end of transaction block");
-                }
             }
         }
 
@@ -342,14 +351,14 @@ public class TransactionManager
 
         public synchronized CompletableFuture<?> asyncCommit()
         {
-            if (!completedSuccessfully.compareAndSet(null, true)) {
-                if (completedSuccessfully.get()) {
-                    // Already done
-                    return completedFuture(null);
-                }
-                // Transaction already aborted
+            if (state == State.COMMITTED) {
+                return completedFuture(null);
+            }
+            if (state == State.ABORTED) {
                 return failedFuture(new PrestoException(TRANSACTION_ALREADY_ABORTED, "Current transaction has already been aborted"));
             }
+            verify(state == State.ACTIVE);
+            state = State.COMMITTED;
 
             String writeConnectorId = this.writtenConnectorId.get();
             if (writeConnectorId == null) {
@@ -388,14 +397,16 @@ public class TransactionManager
 
         public synchronized CompletableFuture<?> asyncAbort()
         {
-            if (!completedSuccessfully.compareAndSet(null, false)) {
-                if (completedSuccessfully.get()) {
-                    // Should not happen normally
-                    return failedFuture(new IllegalStateException("Current transaction already committed"));
-                }
-                // Already done
+            if (state == State.ABORTED) {
                 return completedFuture(null);
             }
+            if (state == State.COMMITTED) {
+                // Should not happen normally
+                return failedFuture(new IllegalStateException("Current transaction already committed"));
+            }
+            verify(state == State.ACTIVE);
+            state = State.ABORTED;
+
             return abortInternal();
         }
 
