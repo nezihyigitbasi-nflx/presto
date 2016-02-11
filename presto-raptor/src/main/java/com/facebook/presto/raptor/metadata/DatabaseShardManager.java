@@ -514,6 +514,12 @@ public class DatabaseShardManager
         return assignments.build();
     }
 
+    @Override
+    public List<BucketNodeSize> getBucketNodeSizes(long distributionId)
+    {
+        return dao.getBucketNodeSizes(distributionId);
+    }
+
     private Set<String> getNodeIdentifiers()
     {
         Set<String> nodeIds = nodeSupplier.getWorkerNodes().stream()

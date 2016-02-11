@@ -316,4 +316,19 @@ public interface ShardManagerDao
             @Bind("distributionId") long distributionId,
             @Bind("bucketNumber") int bucketNumber,
             @Bind("nodeId") int nodeId);
+
+    @SqlQuery("SELECT b.bucket_number, n.node_identifier, coalesce(x.size, 0) size\n" +
+            "FROM buckets b\n" +
+            "JOIN nodes n ON (b.node_id = n.node_id)\n" +
+            "LEFT JOIN (\n" +
+            "  SELECT bucket_number, sum(compressed_size) size\n" +
+            "  FROM shards s\n" +
+            "  WHERE table_id IN (\n" +
+            "    SELECT table_id FROM tables WHERE distribution_id = :distributionId)\n" +
+            "  GROUP BY bucket_number\n" +
+            ") x ON (b.bucket_number = x.bucket_number)\n" +
+            "WHERE b.distribution_id = :distributionId\n" +
+            "ORDER BY b.bucket_number")
+    @Mapper(BucketNodeSize.Mapper.class)
+    List<BucketNodeSize> getBucketNodeSizes(@Bind("distributionId") long distributionId);
 }

@@ -210,4 +210,10 @@ public interface MetadataDao
             @Bind("distributionName") String distributionName,
             @Bind("columnTypes") String columnTypes,
             @Bind("bucketCount") int bucketCount);
+
+    @SqlQuery("SELECT distribution_id\n" +
+            "FROM distributions\n" +
+            "WHERE distribution_id IN (SELECT distribution_id FROM tables)\n" +
+            "ORDER BY distribution_id")
+    List<Long> getActiveDistributionIds();
 }

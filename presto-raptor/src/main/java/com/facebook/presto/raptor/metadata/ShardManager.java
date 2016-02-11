@@ -97,4 +97,9 @@ public interface ShardManager
      * Get map of buckets to node identifiers for a table.
      */
     Map<Integer, String> getBucketAssignments(long distributionId);
+
+    /**
+     * Get the number of bytes used by bucket shards per node for a distribution.
+     */
+    List<BucketNodeSize> getBucketNodeSizes(long distributionId);
 }
