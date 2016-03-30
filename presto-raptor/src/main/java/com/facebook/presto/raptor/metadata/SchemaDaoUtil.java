@@ -57,6 +57,7 @@ public final class SchemaDaoUtil
         dao.createTableCreatedShards();
         dao.createTableDeletedShards();
         dao.createTableBuckets();
+        dao.createTableOldestQueries();
     }
 
     private static void sleep(Duration duration)

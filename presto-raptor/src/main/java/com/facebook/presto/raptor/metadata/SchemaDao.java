@@ -130,4 +130,11 @@ public interface SchemaDao
             "  FOREIGN KEY (node_id) REFERENCES nodes (node_id)\n" +
             ")")
     void createTableBuckets();
+
+    @SqlUpdate("CREATE TABLE IF NOT EXISTS oldest_queries (\n" +
+            "  coordinator_id VARCHAR(255) PRIMARY KEY,\n" +
+            "  query_id VARCHAR(255) NOT NULL,\n" +
+            "  start_time DATETIME NOT NULL\n" +
+            ")")
+    void createTableOldestQueries();
 }
