@@ -56,18 +56,20 @@ import io.airlift.discovery.client.ServiceAnnouncement;
 import io.airlift.discovery.client.ServiceSelectorManager;
 import io.airlift.discovery.client.testing.TestingDiscoveryModule;
 import io.airlift.event.client.EventModule;
-import io.airlift.http.server.testing.TestingHttpServer;
-import io.airlift.http.server.testing.TestingHttpServerModule;
+import io.airlift.http.server.HttpServer;
+import io.airlift.http.server.HttpServerInfo;
+import io.airlift.http.server.HttpServerModule;
 import io.airlift.jaxrs.JaxrsModule;
-import io.airlift.jmx.testing.TestingJmxModule;
 import io.airlift.json.JsonModule;
 import io.airlift.node.testing.TestingNodeModule;
 import io.airlift.tracetoken.TraceTokenModule;
 import org.weakref.jmx.guice.MBeanModule;
 
 import javax.annotation.concurrent.GuardedBy;
+import javax.management.MBeanServer;
 
 import java.io.Closeable;
+import java.lang.management.ManagementFactory;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -85,7 +87,6 @@ import static com.facebook.presto.server.ConditionalModule.installModuleIf;
 import static com.facebook.presto.server.testing.FileUtils.deleteRecursively;
 import static com.google.common.base.Strings.nullToEmpty;
 import static io.airlift.discovery.client.ServiceAnnouncement.serviceAnnouncement;
-import static java.lang.Integer.parseInt;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -96,7 +97,8 @@ public class TestingPrestoServer
     private final LifeCycleManager lifeCycleManager;
     private final PluginManager pluginManager;
     private final ConnectorManager connectorManager;
-    private final TestingHttpServer server;
+    private final HttpServer server;
+    private final HttpServerInfo serverInfo;
     private final TransactionManager transactionManager;
     private final Metadata metadata;
     private final TestingAccessControlManager accessControl;
@@ -183,15 +185,21 @@ public class TestingPrestoServer
         if (coordinator) {
             // TODO: enable failure detector
             serverProperties.put("failure-detector.enabled", "false");
+            serverProperties.put("http-server.http.port", coordinatorPort);
+        }
+        else {
+            serverProperties.put("http-server.http.port", "0");
         }
 
         ImmutableList.Builder<Module> modules = ImmutableList.<Module>builder()
                 .add(new TestingNodeModule(Optional.ofNullable(environment)))
-                .add(new TestingHttpServerModule(parseInt(coordinator ? coordinatorPort : "0")))
+                .add(new HttpServerModule())
                 .add(new JsonModule())
                 .add(new JaxrsModule(true))
                 .add(new MBeanModule())
-                .add(new TestingJmxModule())
+                .add(binder -> {
+                    binder.bind(MBeanServer.class).toInstance(new NamespacingMBeanServer(ManagementFactory.getPlatformMBeanServer()));
+                })
                 .add(new EventModule())
                 .add(new TraceTokenModule())
                 .add(new ServerMainModule(new SqlParserOptions()))
@@ -248,7 +256,7 @@ public class TestingPrestoServer
 
         connectorManager = injector.getInstance(ConnectorManager.class);
 
-        server = injector.getInstance(TestingHttpServer.class);
+        server = injector.getInstance(HttpServer.class);
         transactionManager = injector.getInstance(TransactionManager.class);
         metadata = injector.getInstance(Metadata.class);
         accessControl = injector.getInstance(TestingAccessControlManager.class);
@@ -264,6 +272,8 @@ public class TestingPrestoServer
         announcer = injector.getInstance(Announcer.class);
 
         announcer.forceAnnounce();
+
+        serverInfo = injector.getInstance(HttpServerInfo.class);
 
         refreshNodes();
     }
@@ -312,12 +322,12 @@ public class TestingPrestoServer
 
     public URI getBaseUrl()
     {
-        return server.getBaseUrl();
+        return serverInfo.getHttpUri();
     }
 
     public URI resolve(String path)
     {
-        return server.getBaseUrl().resolve(path);
+        return serverInfo.getHttpUri().resolve(path);
     }
 
     public HostAndPort getAddress()
