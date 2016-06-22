@@ -28,7 +28,6 @@ public class TestJdbcOutputTableHandle
     public void testJsonRoundTrip()
     {
         JdbcOutputTableHandle handle = new JdbcOutputTableHandle(
-                "connectorId",
                 "catalog",
                 "schema",
                 "table",

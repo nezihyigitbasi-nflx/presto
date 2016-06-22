@@ -20,7 +20,6 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-import static com.facebook.presto.plugin.jdbc.TestingDatabase.CONNECTOR_ID;
 import static com.facebook.presto.spi.type.BigintType.BIGINT;
 import static com.facebook.presto.spi.type.VarcharType.VARCHAR;
 import static com.facebook.presto.spi.type.VarcharType.createVarcharType;
@@ -73,9 +72,9 @@ public class TestJdbcClient
         assertEquals(table.getTableName(), "NUMBERS");
         assertEquals(table.getSchemaTableName(), schemaTableName);
         assertEquals(jdbcClient.getColumns(table), ImmutableList.of(
-                new JdbcColumnHandle(CONNECTOR_ID, "TEXT", VARCHAR),
-                new JdbcColumnHandle(CONNECTOR_ID, "TEXT_SHORT", createVarcharType(32)),
-                new JdbcColumnHandle(CONNECTOR_ID, "VALUE", BIGINT)));
+                new JdbcColumnHandle("TEXT", VARCHAR),
+                new JdbcColumnHandle("TEXT_SHORT", createVarcharType(32)),
+                new JdbcColumnHandle("VALUE", BIGINT)));
     }
 
     @Test
@@ -86,7 +85,7 @@ public class TestJdbcClient
         JdbcTableHandle table = jdbcClient.getTableHandle(schemaTableName);
         assertNotNull(table, "table is null");
         assertEquals(jdbcClient.getColumns(table), ImmutableList.of(
-                new JdbcColumnHandle(CONNECTOR_ID, "TE_T", VARCHAR),
-                new JdbcColumnHandle(CONNECTOR_ID, "VA%UE", BIGINT)));
+                new JdbcColumnHandle("TE_T", VARCHAR),
+                new JdbcColumnHandle("VA%UE", BIGINT)));
     }
 }

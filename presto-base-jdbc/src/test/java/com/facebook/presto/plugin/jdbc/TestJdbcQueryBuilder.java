@@ -66,13 +66,13 @@ public class TestJdbcQueryBuilder
         jdbcClient = database.getJdbcClient();
 
         columns = ImmutableList.of(
-                new JdbcColumnHandle("test_id", "col_0", BIGINT),
-                new JdbcColumnHandle("test_id", "col_1", DOUBLE),
-                new JdbcColumnHandle("test_id", "col_2", BOOLEAN),
-                new JdbcColumnHandle("test_id", "col_3", VARCHAR),
-                new JdbcColumnHandle("test_id", "col_4", DATE),
-                new JdbcColumnHandle("test_id", "col_5", TIME),
-                new JdbcColumnHandle("test_id", "col_6", TIMESTAMP));
+                new JdbcColumnHandle("col_0", BIGINT),
+                new JdbcColumnHandle("col_1", DOUBLE),
+                new JdbcColumnHandle("col_2", BOOLEAN),
+                new JdbcColumnHandle("col_3", VARCHAR),
+                new JdbcColumnHandle("col_4", DATE),
+                new JdbcColumnHandle("col_5", TIME),
+                new JdbcColumnHandle("col_6", TIMESTAMP));
 
         Connection connection = database.getConnection();
         try (PreparedStatement preparedStatement = connection.prepareStatement("create table \"test_table\" (" + "" +

@@ -32,7 +32,6 @@ import static java.util.Objects.requireNonNull;
 public class JdbcSplit
         implements ConnectorSplit
 {
-    private final String connectorId;
     private final String catalogName;
     private final String schemaName;
     private final String tableName;
@@ -42,7 +41,6 @@ public class JdbcSplit
 
     @JsonCreator
     public JdbcSplit(
-            @JsonProperty("connectorId") String connectorId,
             @JsonProperty("catalogName") @Nullable String catalogName,
             @JsonProperty("schemaName") @Nullable String schemaName,
             @JsonProperty("tableName") String tableName,
@@ -50,19 +48,12 @@ public class JdbcSplit
             @JsonProperty("connectionProperties") Map<String, String> connectionProperties,
             @JsonProperty("tupleDomain") TupleDomain<ColumnHandle> tupleDomain)
     {
-        this.connectorId = requireNonNull(connectorId, "connector id is null");
         this.catalogName = catalogName;
         this.schemaName = schemaName;
         this.tableName = requireNonNull(tableName, "table name is null");
         this.connectionUrl = requireNonNull(connectionUrl, "connectionUrl is null");
         this.connectionProperties = ImmutableMap.copyOf(requireNonNull(connectionProperties, "connectionProperties is null"));
         this.tupleDomain = requireNonNull(tupleDomain, "tupleDomain is null");
-    }
-
-    @JsonProperty
-    public String getConnectorId()
-    {
-        return connectorId;
     }
 
     @JsonProperty

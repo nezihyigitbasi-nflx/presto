@@ -60,20 +60,20 @@ public class TestJdbcRecordSet
             throws Exception
     {
         RecordSet recordSet = new JdbcRecordSet(jdbcClient, split, ImmutableList.of(
-                new JdbcColumnHandle("test", "text", VARCHAR),
-                new JdbcColumnHandle("test", "text_short", createVarcharType(32)),
-                new JdbcColumnHandle("test", "value", BIGINT)));
+                new JdbcColumnHandle("text", VARCHAR),
+                new JdbcColumnHandle("text_short", createVarcharType(32)),
+                new JdbcColumnHandle("value", BIGINT)));
         assertEquals(recordSet.getColumnTypes(), ImmutableList.of(VARCHAR, createVarcharType(32), BIGINT));
 
         recordSet = new JdbcRecordSet(jdbcClient, split, ImmutableList.of(
-                new JdbcColumnHandle("test", "value", BIGINT),
-                new JdbcColumnHandle("test", "text", VARCHAR)));
+                new JdbcColumnHandle("value", BIGINT),
+                new JdbcColumnHandle("text", VARCHAR)));
         assertEquals(recordSet.getColumnTypes(), ImmutableList.of(BIGINT, VARCHAR));
 
         recordSet = new JdbcRecordSet(jdbcClient, split, ImmutableList.of(
-                new JdbcColumnHandle("test", "value", BIGINT),
-                new JdbcColumnHandle("test", "value", BIGINT),
-                new JdbcColumnHandle("test", "text", VARCHAR)));
+                new JdbcColumnHandle("value", BIGINT),
+                new JdbcColumnHandle("value", BIGINT),
+                new JdbcColumnHandle("text", VARCHAR)));
         assertEquals(recordSet.getColumnTypes(), ImmutableList.of(BIGINT, BIGINT, VARCHAR));
 
         recordSet = new JdbcRecordSet(jdbcClient, split, ImmutableList.<JdbcColumnHandle>of());

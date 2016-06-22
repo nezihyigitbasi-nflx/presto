@@ -25,7 +25,7 @@ import static org.testng.Assert.assertEquals;
 
 public class TestJdbcSplit
 {
-    private final JdbcSplit split = new JdbcSplit("connectorId", "catalog", "schemaName", "tableName", "connectionUrl", ImmutableMap.<String, String>of(), TupleDomain.<ColumnHandle>all());
+    private final JdbcSplit split = new JdbcSplit("catalog", "schemaName", "tableName", "connectionUrl", ImmutableMap.<String, String>of(), TupleDomain.<ColumnHandle>all());
 
     @Test
     public void testAddresses()
@@ -34,7 +34,7 @@ public class TestJdbcSplit
         assertEquals(split.getAddresses(), ImmutableList.of());
         assertEquals(split.isRemotelyAccessible(), true);
 
-        JdbcSplit jdbcSplit = new JdbcSplit("connectorId", "catalog", "schemaName", "tableName", "connectionUrl", ImmutableMap.<String, String>of(), TupleDomain.<ColumnHandle>all());
+        JdbcSplit jdbcSplit = new JdbcSplit("catalog", "schemaName", "tableName", "connectionUrl", ImmutableMap.<String, String>of(), TupleDomain.<ColumnHandle>all());
         assertEquals(jdbcSplit.getAddresses(), ImmutableList.of());
     }
 
@@ -44,7 +44,6 @@ public class TestJdbcSplit
         JsonCodec<JdbcSplit> codec = jsonCodec(JdbcSplit.class);
         String json = codec.toJson(split);
         JdbcSplit copy = codec.fromJson(json);
-        assertEquals(copy.getConnectorId(), split.getConnectorId());
         assertEquals(copy.getSchemaName(), split.getSchemaName());
         assertEquals(copy.getTableName(), split.getTableName());
 

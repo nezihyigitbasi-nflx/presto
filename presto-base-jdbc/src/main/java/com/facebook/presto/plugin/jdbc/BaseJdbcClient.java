@@ -173,7 +173,6 @@ public class BaseJdbcClient
                 List<JdbcTableHandle> tableHandles = new ArrayList<>();
                 while (resultSet.next()) {
                     tableHandles.add(new JdbcTableHandle(
-                            connectorId,
                             schemaTableName,
                             resultSet.getString("TABLE_CAT"),
                             resultSet.getString("TABLE_SCHEM"),
@@ -206,7 +205,7 @@ public class BaseJdbcClient
                     // skip unsupported column types
                     if (columnType != null) {
                         String columnName = resultSet.getString("COLUMN_NAME");
-                        columns.add(new JdbcColumnHandle(connectorId, columnName, columnType));
+                        columns.add(new JdbcColumnHandle(columnName, columnType));
                     }
                 }
                 if (!found) {
@@ -228,7 +227,6 @@ public class BaseJdbcClient
     {
         JdbcTableHandle tableHandle = layoutHandle.getTable();
         JdbcSplit jdbcSplit = new JdbcSplit(
-                connectorId,
                 tableHandle.getCatalogName(),
                 tableHandle.getSchemaName(),
                 tableHandle.getTableName(),
@@ -313,7 +311,6 @@ public class BaseJdbcClient
             execute(connection, sql.toString());
 
             return new JdbcOutputTableHandle(
-                    connectorId,
                     catalog,
                     schema,
                     table,
@@ -365,7 +362,6 @@ public class BaseJdbcClient
     public void rollbackCreateTable(JdbcOutputTableHandle handle)
     {
         dropTable(new JdbcTableHandle(
-                handle.getConnectorId(),
                 new SchemaTableName(handle.getSchemaName(), handle.getTemporaryTableName()),
                 handle.getCatalogName(),
                 handle.getSchemaName(),
