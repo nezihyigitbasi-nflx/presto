@@ -13,6 +13,8 @@
  */
 package com.facebook.presto.operator.aggregation.state;
 
+import com.facebook.presto.spi.function.AbstractGroupedAccumulatorState;
+import com.facebook.presto.spi.function.AccumulatorStateFactory;
 import com.facebook.presto.util.array.DoubleBigArray;
 import com.facebook.presto.util.array.ObjectBigArray;
 import io.airlift.stats.QuantileDigest;
