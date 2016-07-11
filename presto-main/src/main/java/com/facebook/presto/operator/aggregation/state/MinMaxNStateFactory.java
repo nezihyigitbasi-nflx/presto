@@ -16,7 +16,7 @@ package com.facebook.presto.operator.aggregation.state;
 import com.facebook.presto.operator.aggregation.TypedHeap;
 import com.facebook.presto.spi.function.AbstractGroupedAccumulatorState;
 import com.facebook.presto.spi.function.AccumulatorStateFactory;
-import com.facebook.presto.util.array.ObjectBigArray;
+import com.facebook.presto.spi.util.array.ObjectBigArray;
 
 public class MinMaxNStateFactory
         implements AccumulatorStateFactory<MinMaxNState>

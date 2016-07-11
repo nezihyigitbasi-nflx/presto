@@ -11,16 +11,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.facebook.presto.util.array;
+package com.facebook.presto.spi.util.array;
 
 import io.airlift.slice.SizeOf;
 
 import java.util.Arrays;
 
-import static com.facebook.presto.util.array.BigArrays.INITIAL_SEGMENTS;
-import static com.facebook.presto.util.array.BigArrays.SEGMENT_SIZE;
-import static com.facebook.presto.util.array.BigArrays.offset;
-import static com.facebook.presto.util.array.BigArrays.segment;
+import static com.facebook.presto.spi.util.array.BigArrays.INITIAL_SEGMENTS;
+import static com.facebook.presto.spi.util.array.BigArrays.SEGMENT_SIZE;
+import static com.facebook.presto.spi.util.array.BigArrays.offset;
+import static com.facebook.presto.spi.util.array.BigArrays.segment;
 import static io.airlift.slice.SizeOf.sizeOfBooleanArray;
 
 // Note: this code was forked from fastutil (http://fastutil.di.unimi.it/)

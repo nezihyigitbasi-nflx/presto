@@ -19,9 +19,9 @@ import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.block.Block;
 import com.facebook.presto.spi.block.BlockBuilder;
 import com.facebook.presto.spi.type.Type;
+import com.facebook.presto.spi.util.array.IntBigArray;
+import com.facebook.presto.spi.util.array.LongBigArray;
 import com.facebook.presto.type.BigintOperators;
-import com.facebook.presto.util.array.IntBigArray;
-import com.facebook.presto.util.array.LongBigArray;
 import com.google.common.collect.ImmutableList;
 
 import java.util.List;

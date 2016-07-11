@@ -17,7 +17,7 @@ import com.facebook.presto.spi.block.Block;
 import com.facebook.presto.spi.block.BlockBuilder;
 import com.facebook.presto.spi.block.BlockBuilderStatus;
 import com.facebook.presto.spi.type.Type;
-import com.facebook.presto.util.array.IntBigArray;
+import com.facebook.presto.spi.util.array.IntBigArray;
 import io.airlift.units.DataSize;
 import org.openjdk.jol.info.ClassLayout;
 

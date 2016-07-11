@@ -11,45 +11,45 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.facebook.presto.util.array;
+package com.facebook.presto.spi.util.array;
 
 import io.airlift.slice.SizeOf;
 
 import java.util.Arrays;
 
-import static com.facebook.presto.util.array.BigArrays.INITIAL_SEGMENTS;
-import static com.facebook.presto.util.array.BigArrays.SEGMENT_SIZE;
-import static com.facebook.presto.util.array.BigArrays.offset;
-import static com.facebook.presto.util.array.BigArrays.segment;
-import static io.airlift.slice.SizeOf.sizeOfDoubleArray;
+import static com.facebook.presto.spi.util.array.BigArrays.INITIAL_SEGMENTS;
+import static com.facebook.presto.spi.util.array.BigArrays.SEGMENT_SIZE;
+import static com.facebook.presto.spi.util.array.BigArrays.offset;
+import static com.facebook.presto.spi.util.array.BigArrays.segment;
+import static io.airlift.slice.SizeOf.sizeOfLongArray;
 
 // Note: this code was forked from fastutil (http://fastutil.di.unimi.it/)
 // Copyright (C) 2010-2013 Sebastiano Vigna
-public final class DoubleBigArray
+public final class LongBigArray
 {
-    private static final long SIZE_OF_SEGMENT = sizeOfDoubleArray(SEGMENT_SIZE);
+    private static final long SIZE_OF_SEGMENT = sizeOfLongArray(SEGMENT_SIZE);
 
-    private final double initialValue;
+    private final long initialValue;
 
-    private double[][] array;
+    private long[][] array;
     private int capacity;
     private int segments;
 
     /**
      * Creates a new big array containing one initial segment
      */
-    public DoubleBigArray()
+    public LongBigArray()
     {
-        this(0.0);
+        this(0L);
     }
 
     /**
      * Creates a new big array containing one initial segment filled with the specified default value
      */
-    public DoubleBigArray(double initialValue)
+    public LongBigArray(long initialValue)
     {
         this.initialValue = initialValue;
-        array = new double[INITIAL_SEGMENTS][];
+        array = new long[INITIAL_SEGMENTS][];
         allocateNewSegment();
     }
 
@@ -67,7 +67,7 @@ public final class DoubleBigArray
      * @param index a position in this big array.
      * @return the element of this big array at the specified position.
      */
-    public double get(long index)
+    public long get(long index)
     {
         return array[segment(index)][offset(index)];
     }
@@ -77,9 +77,19 @@ public final class DoubleBigArray
      *
      * @param index a position in this big array.
      */
-    public void set(long index, double value)
+    public void set(long index, long value)
     {
         array[segment(index)][offset(index)] = value;
+    }
+
+    /**
+     * Increments the element of this big array at specified index.
+     *
+     * @param index a position in this big array.
+     */
+    public void increment(long index)
+    {
+        array[segment(index)][offset(index)]++;
     }
 
     /**
@@ -88,7 +98,7 @@ public final class DoubleBigArray
      * @param index a position in this big array.
      * @param value the value
      */
-    public void add(long index, double value)
+    public void add(long index, long value)
     {
         array[segment(index)][offset(index)] += value;
     }
@@ -124,8 +134,8 @@ public final class DoubleBigArray
 
     private void allocateNewSegment()
     {
-        double[] newSegment = new double[SEGMENT_SIZE];
-        if (initialValue != 0.0) {
+        long[] newSegment = new long[SEGMENT_SIZE];
+        if (initialValue != 0) {
             Arrays.fill(newSegment, initialValue);
         }
         array[segments] = newSegment;

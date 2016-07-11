@@ -18,9 +18,9 @@ import com.facebook.presto.spi.block.BlockBuilder;
 import com.facebook.presto.spi.block.BlockBuilderStatus;
 import com.facebook.presto.spi.block.InterleavedBlockBuilder;
 import com.facebook.presto.spi.type.Type;
+import com.facebook.presto.spi.util.array.IntBigArray;
+import com.facebook.presto.spi.util.array.LongBigArray;
 import com.facebook.presto.type.TypeUtils;
-import com.facebook.presto.util.array.IntBigArray;
-import com.facebook.presto.util.array.LongBigArray;
 import com.google.common.collect.ImmutableList;
 import io.airlift.units.DataSize;
 
