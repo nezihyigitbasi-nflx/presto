@@ -13,80 +13,22 @@
  */
 package com.facebook.presto.operator.window;
 
-import com.facebook.presto.operator.PagesIndex;
 import com.facebook.presto.spi.block.BlockBuilder;
 import io.airlift.slice.Slice;
 
-import static com.google.common.base.MoreObjects.toStringHelper;
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkElementIndex;
-import static com.google.common.base.Preconditions.checkPositionIndex;
-import static java.util.Objects.requireNonNull;
-
-public class WindowIndex
+public interface WindowIndex
 {
-    private final PagesIndex pagesIndex;
-    private final int start;
-    private final int size;
+    int size();
 
-    public WindowIndex(PagesIndex pagesIndex, int start, int end)
-    {
-        requireNonNull(pagesIndex, "pagesIndex is null");
-        checkPositionIndex(start, pagesIndex.getPositionCount(), "start");
-        checkPositionIndex(end, pagesIndex.getPositionCount(), "end");
-        checkArgument(start < end, "start must be before end");
+    boolean isNull(int channel, int position);
 
-        this.pagesIndex = pagesIndex;
-        this.start = start;
-        this.size = end - start;
-    }
+    boolean getBoolean(int channel, int position);
 
-    public int size()
-    {
-        return size;
-    }
+    long getLong(int channel, int position);
 
-    public boolean isNull(int channel, int position)
-    {
-        return pagesIndex.isNull(channel, position(position));
-    }
+    double getDouble(int channel, int position);
 
-    public boolean getBoolean(int channel, int position)
-    {
-        return pagesIndex.getBoolean(channel, position(position));
-    }
+    Slice getSlice(int channel, int position);
 
-    public long getLong(int channel, int position)
-    {
-        return pagesIndex.getLong(channel, position(position));
-    }
-
-    public double getDouble(int channel, int position)
-    {
-        return pagesIndex.getDouble(channel, position(position));
-    }
-
-    public Slice getSlice(int channel, int position)
-    {
-        return pagesIndex.getSlice(channel, position(position));
-    }
-
-    public void appendTo(int channel, int position, BlockBuilder output)
-    {
-        pagesIndex.appendTo(channel, position(position), output);
-    }
-
-    private int position(int position)
-    {
-        checkElementIndex(position, size, "position");
-        return position + start;
-    }
-
-    @Override
-    public String toString()
-    {
-        return toStringHelper(this)
-                .add("size", size)
-                .toString();
-    }
+    void appendTo(int channel, int position, BlockBuilder output);
 }
