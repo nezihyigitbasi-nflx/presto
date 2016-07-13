@@ -14,10 +14,10 @@
 package com.facebook.presto.hive.parquet;
 
 import com.facebook.presto.hive.HiveColumnHandle;
-import parquet.column.Encoding;
-import parquet.io.ParquetDecodingException;
-import parquet.schema.MessageType;
-import parquet.schema.Type;
+import org.apache.parquet.column.Encoding;
+import org.apache.parquet.io.ParquetDecodingException;
+import org.apache.parquet.schema.MessageType;
+import org.apache.parquet.schema.Type;
 
 public final class ParquetTypeUtils
 {
@@ -25,7 +25,7 @@ public final class ParquetTypeUtils
     {
     }
 
-    public static parquet.schema.Type getParquetType(HiveColumnHandle column, MessageType messageType, boolean useParquetColumnNames)
+    public static Type getParquetType(HiveColumnHandle column, MessageType messageType, boolean useParquetColumnNames)
     {
         if (useParquetColumnNames) {
             return getParquetTypeByName(column.getName(), messageType);
@@ -61,7 +61,7 @@ public final class ParquetTypeUtils
         }
     }
 
-    private static parquet.schema.Type getParquetTypeByName(String columnName, MessageType messageType)
+    private static Type getParquetTypeByName(String columnName, MessageType messageType)
     {
         if (messageType.containsField(columnName)) {
             return messageType.getType(columnName);

@@ -13,8 +13,8 @@
  */
 package com.facebook.presto.hive.parquet;
 
-import parquet.column.ColumnDescriptor;
-import parquet.schema.PrimitiveType;
+import org.apache.parquet.column.ColumnDescriptor;
+import org.apache.parquet.schema.PrimitiveType;
 
 // extension of parquet's ColumnDescriptor. Exposes full Primitive type information
 public class RichColumnDescriptor

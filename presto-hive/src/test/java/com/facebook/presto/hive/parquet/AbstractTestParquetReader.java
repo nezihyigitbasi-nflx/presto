@@ -23,11 +23,11 @@ import com.google.common.collect.DiscreteDomain;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Range;
 import com.google.common.primitives.Shorts;
+import org.apache.parquet.hadoop.ParquetOutputFormat;
+import org.apache.parquet.hadoop.codec.CodecConfig;
 import org.joda.time.DateTimeZone;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
-import parquet.hadoop.ParquetOutputFormat;
-import parquet.hadoop.codec.CodecConfig;
 
 import java.sql.Date;
 import java.sql.Timestamp;

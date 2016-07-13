@@ -37,14 +37,14 @@ import org.apache.hadoop.hive.serde2.objectinspector.StructField;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.mapred.JobConf;
+import org.apache.parquet.column.ColumnDescriptor;
+import org.apache.parquet.column.ParquetProperties.WriterVersion;
+import org.apache.parquet.hadoop.ParquetOutputFormat;
+import org.apache.parquet.hadoop.metadata.CompressionCodecName;
+import org.apache.parquet.hadoop.metadata.FileMetaData;
+import org.apache.parquet.hadoop.metadata.ParquetMetadata;
+import org.apache.parquet.schema.MessageType;
 import org.joda.time.DateTimeZone;
-import parquet.column.ColumnDescriptor;
-import parquet.column.ParquetProperties.WriterVersion;
-import parquet.hadoop.ParquetOutputFormat;
-import parquet.hadoop.metadata.CompressionCodecName;
-import parquet.hadoop.metadata.FileMetaData;
-import parquet.hadoop.metadata.ParquetMetadata;
-import parquet.schema.MessageType;
 
 import java.io.Closeable;
 import java.io.File;
@@ -59,13 +59,13 @@ import static com.google.common.base.Functions.constant;
 import static com.google.common.collect.Iterables.transform;
 import static io.airlift.units.DataSize.succinctBytes;
 import static org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory.getStandardStructObjectInspector;
+import static org.apache.parquet.column.ParquetProperties.WriterVersion.PARQUET_1_0;
+import static org.apache.parquet.hadoop.metadata.CompressionCodecName.GZIP;
+import static org.apache.parquet.hadoop.metadata.CompressionCodecName.SNAPPY;
+import static org.apache.parquet.hadoop.metadata.CompressionCodecName.UNCOMPRESSED;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
-import static parquet.column.ParquetProperties.WriterVersion.PARQUET_1_0;
-import static parquet.hadoop.metadata.CompressionCodecName.GZIP;
-import static parquet.hadoop.metadata.CompressionCodecName.SNAPPY;
-import static parquet.hadoop.metadata.CompressionCodecName.UNCOMPRESSED;
 
 public class ParquetTester
 {

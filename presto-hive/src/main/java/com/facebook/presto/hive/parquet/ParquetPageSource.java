@@ -34,9 +34,9 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import io.airlift.slice.Slice;
 import io.airlift.units.DataSize;
+import org.apache.parquet.column.ColumnDescriptor;
+import org.apache.parquet.schema.MessageType;
 import org.joda.time.DateTimeZone;
-import parquet.column.ColumnDescriptor;
-import parquet.schema.MessageType;
 
 import java.io.IOException;
 import java.util.List;

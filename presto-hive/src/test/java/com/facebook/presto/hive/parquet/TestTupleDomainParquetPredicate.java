@@ -14,12 +14,12 @@
 package com.facebook.presto.hive.parquet;
 
 import com.facebook.presto.spi.predicate.ValueSet;
+import org.apache.parquet.column.statistics.BinaryStatistics;
+import org.apache.parquet.column.statistics.BooleanStatistics;
+import org.apache.parquet.column.statistics.DoubleStatistics;
+import org.apache.parquet.column.statistics.LongStatistics;
+import org.apache.parquet.io.api.Binary;
 import org.testng.annotations.Test;
-import parquet.column.statistics.BinaryStatistics;
-import parquet.column.statistics.BooleanStatistics;
-import parquet.column.statistics.DoubleStatistics;
-import parquet.column.statistics.LongStatistics;
-import parquet.io.api.Binary;
 
 import static com.facebook.presto.hive.parquet.predicate.TupleDomainParquetPredicate.getDomain;
 import static com.facebook.presto.spi.predicate.Domain.all;

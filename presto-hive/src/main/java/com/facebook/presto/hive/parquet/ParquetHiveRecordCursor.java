@@ -37,25 +37,25 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.TaskAttemptID;
+import org.apache.parquet.column.Dictionary;
+import org.apache.parquet.hadoop.ParquetFileReader;
+import org.apache.parquet.hadoop.ParquetInputSplit;
+import org.apache.parquet.hadoop.ParquetRecordReader;
+import org.apache.parquet.hadoop.api.ReadSupport;
+import org.apache.parquet.hadoop.metadata.BlockMetaData;
+import org.apache.parquet.hadoop.metadata.FileMetaData;
+import org.apache.parquet.hadoop.metadata.ParquetMetadata;
+import org.apache.parquet.hadoop.util.ContextUtil;
+import org.apache.parquet.io.api.Binary;
+import org.apache.parquet.io.api.Converter;
+import org.apache.parquet.io.api.GroupConverter;
+import org.apache.parquet.io.api.PrimitiveConverter;
+import org.apache.parquet.io.api.RecordMaterializer;
+import org.apache.parquet.schema.DecimalMetadata;
+import org.apache.parquet.schema.GroupType;
+import org.apache.parquet.schema.MessageType;
+import org.apache.parquet.schema.PrimitiveType;
 import org.joda.time.DateTimeZone;
-import parquet.column.Dictionary;
-import parquet.hadoop.ParquetFileReader;
-import parquet.hadoop.ParquetInputSplit;
-import parquet.hadoop.ParquetRecordReader;
-import parquet.hadoop.api.ReadSupport;
-import parquet.hadoop.metadata.BlockMetaData;
-import parquet.hadoop.metadata.FileMetaData;
-import parquet.hadoop.metadata.ParquetMetadata;
-import parquet.hadoop.util.ContextUtil;
-import parquet.io.api.Binary;
-import parquet.io.api.Converter;
-import parquet.io.api.GroupConverter;
-import parquet.io.api.PrimitiveConverter;
-import parquet.io.api.RecordMaterializer;
-import parquet.schema.DecimalMetadata;
-import parquet.schema.GroupType;
-import parquet.schema.MessageType;
-import parquet.schema.PrimitiveType;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -112,9 +112,9 @@ import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
-import static parquet.format.converter.ParquetMetadataConverter.NO_FILTER;
-import static parquet.schema.OriginalType.DECIMAL;
-import static parquet.schema.OriginalType.MAP_KEY_VALUE;
+import static org.apache.parquet.format.converter.ParquetMetadataConverter.NO_FILTER;
+import static org.apache.parquet.schema.OriginalType.DECIMAL;
+import static org.apache.parquet.schema.OriginalType.MAP_KEY_VALUE;
 
 public class ParquetHiveRecordCursor
         extends HiveRecordCursor
@@ -419,7 +419,7 @@ public class ParquetHiveRecordCursor
 
             PrestoReadSupport readSupport = new PrestoReadSupport(useParquetColumnNames, columns, fileSchema);
 
-            List<parquet.schema.Type> fields = columns.stream()
+            List<org.apache.parquet.schema.Type> fields = columns.stream()
                     .filter(column -> !column.isPartitionKey())
                     .map(column -> getParquetType(column, fileSchema, useParquetColumnNames))
                     .filter(Objects::nonNull)
@@ -507,7 +507,7 @@ public class ParquetHiveRecordCursor
             for (int i = 0; i < columns.size(); i++) {
                 HiveColumnHandle column = columns.get(i);
                 if (!column.isPartitionKey()) {
-                    parquet.schema.Type parquetType = getParquetType(column, messageType, useParquetColumnNames);
+                    org.apache.parquet.schema.Type parquetType = getParquetType(column, messageType, useParquetColumnNames);
                     if (parquetType == null) {
                         continue;
                     }
@@ -535,7 +535,7 @@ public class ParquetHiveRecordCursor
                 Map<String, String> keyValueMetaData,
                 MessageType messageType)
         {
-            List<parquet.schema.Type> fields = columns.stream()
+            List<org.apache.parquet.schema.Type> fields = columns.stream()
                     .filter(column -> !column.isPartitionKey())
                     .map(column -> getParquetType(column, messageType, useParquetColumnNames))
                     .filter(Objects::nonNull)
@@ -778,7 +778,7 @@ public class ParquetHiveRecordCursor
         public abstract Block getBlock();
     }
 
-    private static BlockConverter createConverter(Type prestoType, String columnName, parquet.schema.Type parquetType, int fieldIndex)
+    private static BlockConverter createConverter(Type prestoType, String columnName, org.apache.parquet.schema.Type parquetType, int fieldIndex)
     {
         if (parquetType.isPrimitive()) {
             if (parquetType.getOriginalType() == DECIMAL) {
@@ -793,7 +793,7 @@ public class ParquetHiveRecordCursor
         return createGroupConverter(prestoType, columnName, parquetType, fieldIndex);
     }
 
-    private static GroupedConverter createGroupConverter(Type prestoType, String columnName, parquet.schema.Type parquetType, int fieldIndex)
+    private static GroupedConverter createGroupConverter(Type prestoType, String columnName, org.apache.parquet.schema.Type parquetType, int fieldIndex)
     {
         GroupType groupType = parquetType.asGroupType();
         switch (prestoType.getTypeSignature().getBase()) {
@@ -826,7 +826,7 @@ public class ParquetHiveRecordCursor
         {
             checkArgument(ROW.equals(prestoType.getTypeSignature().getBase()));
             List<Type> prestoTypeParameters = prestoType.getTypeParameters();
-            List<parquet.schema.Type> fieldTypes = entryType.getFields();
+            List<org.apache.parquet.schema.Type> fieldTypes = entryType.getFields();
             checkArgument(
                     prestoTypeParameters.size() == fieldTypes.size(),
                     "Schema mismatch, metastore schema for row column %s has %s fields but parquet schema has %s fields",
@@ -839,7 +839,7 @@ public class ParquetHiveRecordCursor
 
             ImmutableList.Builder<BlockConverter> converters = ImmutableList.builder();
             for (int i = 0; i < prestoTypeParameters.size(); i++) {
-                parquet.schema.Type fieldType = fieldTypes.get(i);
+                org.apache.parquet.schema.Type fieldType = fieldTypes.get(i);
                 converters.add(createConverter(prestoTypeParameters.get(i), columnName + "." + fieldType.getName(), fieldType, i));
             }
             this.converters = converters.build();
@@ -946,7 +946,7 @@ public class ParquetHiveRecordCursor
             // However, some parquet libraries don't follow this spec. The
             // compatibility rules used here are specified in the Parquet
             // documentation at http://git.io/vOpNz.
-            parquet.schema.Type elementType = listType.getType(0);
+            org.apache.parquet.schema.Type elementType = listType.getType(0);
             if (isElementType(elementType, listType.getName())) {
                 elementConverter = createConverter(prestoType.getTypeParameters().get(0), columnName + ".element", elementType, 0);
             }
@@ -956,7 +956,7 @@ public class ParquetHiveRecordCursor
         }
 
         //copied over from Apache Hive
-        private boolean isElementType(parquet.schema.Type repeatedType, String parentName)
+        private boolean isElementType(org.apache.parquet.schema.Type repeatedType, String parentName)
         {
             if (repeatedType.isPrimitive() ||
                     (repeatedType.asGroupType().getFieldCount() > 1)) {
@@ -1125,7 +1125,7 @@ public class ParquetHiveRecordCursor
             this.mapType = type;
             this.fieldIndex = fieldIndex;
 
-            parquet.schema.Type entryType = mapType.getFields().get(0);
+            org.apache.parquet.schema.Type entryType = mapType.getFields().get(0);
 
             entryConverter = new ParquetMapEntryConverter(type, columnName + ".entry", entryType.asGroupType());
         }

@@ -14,7 +14,7 @@
 package com.facebook.presto.hive.parquet.dictionary;
 
 import com.facebook.presto.hive.parquet.ParquetDictionaryPage;
-import parquet.column.values.plain.PlainValuesReader.DoublePlainValuesReader;
+import org.apache.parquet.column.values.plain.PlainValuesReader.DoublePlainValuesReader;
 
 import java.io.IOException;
 

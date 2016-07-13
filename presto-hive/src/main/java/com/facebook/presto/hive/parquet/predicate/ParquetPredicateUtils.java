@@ -28,18 +28,18 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.common.primitives.Ints;
 import io.airlift.slice.Slice;
-import parquet.column.ColumnDescriptor;
-import parquet.column.Encoding;
-import parquet.column.statistics.Statistics;
-import parquet.format.DictionaryPageHeader;
-import parquet.format.PageHeader;
-import parquet.format.PageType;
-import parquet.format.Util;
-import parquet.hadoop.metadata.BlockMetaData;
-import parquet.hadoop.metadata.ColumnChunkMetaData;
-import parquet.hadoop.metadata.ColumnPath;
-import parquet.hadoop.metadata.CompressionCodecName;
-import parquet.schema.MessageType;
+import org.apache.parquet.column.ColumnDescriptor;
+import org.apache.parquet.column.Encoding;
+import org.apache.parquet.column.statistics.Statistics;
+import org.apache.parquet.format.DictionaryPageHeader;
+import org.apache.parquet.format.PageHeader;
+import org.apache.parquet.format.PageType;
+import org.apache.parquet.format.Util;
+import org.apache.parquet.hadoop.metadata.BlockMetaData;
+import org.apache.parquet.hadoop.metadata.ColumnChunkMetaData;
+import org.apache.parquet.hadoop.metadata.ColumnPath;
+import org.apache.parquet.hadoop.metadata.CompressionCodecName;
+import org.apache.parquet.schema.MessageType;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -51,9 +51,9 @@ import java.util.Set;
 import static com.facebook.presto.hive.parquet.ParquetCompressionUtils.decompress;
 import static com.facebook.presto.hive.parquet.ParquetTypeUtils.getParquetEncoding;
 import static io.airlift.slice.Slices.wrappedBuffer;
-import static parquet.column.Encoding.BIT_PACKED;
-import static parquet.column.Encoding.PLAIN_DICTIONARY;
-import static parquet.column.Encoding.RLE;
+import static org.apache.parquet.column.Encoding.BIT_PACKED;
+import static org.apache.parquet.column.Encoding.PLAIN_DICTIONARY;
+import static org.apache.parquet.column.Encoding.RLE;
 
 public final class ParquetPredicateUtils
 {

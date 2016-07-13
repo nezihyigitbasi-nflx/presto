@@ -24,7 +24,7 @@ import org.apache.hadoop.hive.ql.io.orc.OrcFile.OrcTableProperties;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.net.DNSToSwitchMapping;
 import org.apache.hadoop.net.SocksSocketFactory;
-import parquet.hadoop.ParquetOutputFormat;
+import org.apache.parquet.hadoop.ParquetOutputFormat;
 
 import javax.inject.Inject;
 import javax.net.SocketFactory;

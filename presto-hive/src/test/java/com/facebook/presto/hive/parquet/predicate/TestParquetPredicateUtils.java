@@ -14,19 +14,19 @@
 package com.facebook.presto.hive.parquet.predicate;
 
 import com.google.common.collect.ImmutableSet;
+import org.apache.parquet.column.Encoding;
 import org.testng.annotations.Test;
-import parquet.column.Encoding;
 
 import java.util.Set;
 
 import static com.facebook.presto.hive.parquet.predicate.ParquetPredicateUtils.isOnlyDictionaryEncodingPages;
 import static com.google.common.collect.Sets.union;
+import static org.apache.parquet.column.Encoding.BIT_PACKED;
+import static org.apache.parquet.column.Encoding.PLAIN;
+import static org.apache.parquet.column.Encoding.PLAIN_DICTIONARY;
+import static org.apache.parquet.column.Encoding.RLE;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
-import static parquet.column.Encoding.BIT_PACKED;
-import static parquet.column.Encoding.PLAIN;
-import static parquet.column.Encoding.PLAIN_DICTIONARY;
-import static parquet.column.Encoding.RLE;
 
 public class TestParquetPredicateUtils
 {

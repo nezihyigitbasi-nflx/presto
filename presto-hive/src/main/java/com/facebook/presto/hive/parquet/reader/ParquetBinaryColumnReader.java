@@ -18,8 +18,8 @@ import com.facebook.presto.spi.block.BlockBuilderStatus;
 import com.facebook.presto.spi.type.Type;
 import io.airlift.slice.Slice;
 import io.airlift.slice.Slices;
-import parquet.column.ColumnDescriptor;
-import parquet.io.api.Binary;
+import org.apache.parquet.column.ColumnDescriptor;
+import org.apache.parquet.io.api.Binary;
 
 import static com.facebook.presto.spi.type.Varchars.isVarcharType;
 import static com.facebook.presto.spi.type.Varchars.truncateToLength;

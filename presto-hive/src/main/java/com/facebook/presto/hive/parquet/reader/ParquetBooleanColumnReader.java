@@ -16,7 +16,7 @@ package com.facebook.presto.hive.parquet.reader;
 import com.facebook.presto.spi.block.BlockBuilder;
 import com.facebook.presto.spi.block.BlockBuilderStatus;
 import com.facebook.presto.spi.type.Type;
-import parquet.column.ColumnDescriptor;
+import org.apache.parquet.column.ColumnDescriptor;
 
 public class ParquetBooleanColumnReader
         extends ParquetColumnReader

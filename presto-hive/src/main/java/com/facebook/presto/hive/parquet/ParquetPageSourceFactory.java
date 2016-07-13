@@ -31,11 +31,12 @@ import com.google.common.collect.ImmutableSet;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.parquet.hadoop.metadata.BlockMetaData;
+import org.apache.parquet.hadoop.metadata.FileMetaData;
+import org.apache.parquet.hadoop.metadata.ParquetMetadata;
+import org.apache.parquet.schema.MessageType;
+import org.apache.parquet.schema.Type;
 import org.joda.time.DateTimeZone;
-import parquet.hadoop.metadata.BlockMetaData;
-import parquet.hadoop.metadata.FileMetaData;
-import parquet.hadoop.metadata.ParquetMetadata;
-import parquet.schema.MessageType;
 
 import javax.inject.Inject;
 
@@ -164,7 +165,7 @@ public class ParquetPageSourceFactory
             FileMetaData fileMetaData = parquetMetadata.getFileMetaData();
             MessageType fileSchema = fileMetaData.getSchema();
 
-            List<parquet.schema.Type> fields = columns.stream()
+            List<Type> fields = columns.stream()
                     .filter(column -> !column.isPartitionKey())
                     .map(column -> getParquetType(column, fileSchema, useParquetColumnNames))
                     .filter(Objects::nonNull)
