@@ -13,19 +13,27 @@
  */
 package com.facebook.presto.hive.parquet;
 
+import com.facebook.presto.hive.$internal.jodd.datetime.JDateTime;
 import com.facebook.presto.spi.PrestoException;
-import org.apache.hadoop.hive.ql.io.parquet.timestamp.NanoTimeUtils;
 import org.testng.annotations.Test;
 import parquet.io.api.Binary;
 
 import java.sql.Timestamp;
+import java.util.Calendar;
+import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
 
 import static com.facebook.presto.hive.HiveErrorCode.HIVE_BAD_DATA;
 import static com.facebook.presto.hive.parquet.ParquetTimestampUtils.getTimestampMillis;
+import static com.facebook.presto.hive.parquet.ParquetTimestampUtils.toBinary;
 import static org.testng.Assert.assertEquals;
 
 public class TestParquetTimestampUtils
 {
+    private static final long NANOS_PER_HOUR = TimeUnit.HOURS.toNanos(1);
+    private static final long NANOS_PER_MINUTE = TimeUnit.MINUTES.toNanos(1);
+    private static final long NANOS_PER_SECOND = TimeUnit.SECONDS.toNanos(1);
+
     @Test
     public void testGetTimestampMillis()
     {
@@ -50,8 +58,27 @@ public class TestParquetTimestampUtils
     private static void assertTimestampCorrect(String timestampString)
     {
         Timestamp timestamp = Timestamp.valueOf(timestampString);
-        Binary timestampBytes = NanoTimeUtils.getNanoTime(timestamp, false).toBinary();
+        Binary timestampBytes = toParquetBinary(timestamp);
         long decodedTimestampMillis = getTimestampMillis(timestampBytes);
         assertEquals(decodedTimestampMillis, timestamp.getTime());
+    }
+
+    // copied from Hive NanoTimeUtils
+    private static Binary toParquetBinary(Timestamp timestamp)
+    {
+        Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
+        calendar.setTime(timestamp);
+        JDateTime jDateTime = new JDateTime(calendar.get(Calendar.YEAR),
+                calendar.get(Calendar.MONTH) + 1,  //java calendar index starting at 1.
+                calendar.get(Calendar.DAY_OF_MONTH));
+        int days = jDateTime.getJulianDayNumber();
+
+        long hour = calendar.get(Calendar.HOUR_OF_DAY);
+        long minute = calendar.get(Calendar.MINUTE);
+        long second = calendar.get(Calendar.SECOND);
+        long nanos = timestamp.getNanos();
+        long nanosOfDay = nanos + NANOS_PER_SECOND * second + NANOS_PER_MINUTE * minute +
+                NANOS_PER_HOUR * hour;
+        return toBinary(days, nanosOfDay);
     }
 }

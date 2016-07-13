@@ -18,6 +18,8 @@ import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import parquet.io.api.Binary;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.concurrent.TimeUnit;
 
 import static com.facebook.presto.hive.HiveErrorCode.HIVE_BAD_DATA;
@@ -59,5 +61,15 @@ public final class ParquetTimestampUtils
     private static long julianDayToMillis(int julianDay)
     {
         return (julianDay - JULIAN_EPOCH_OFFSET_DAYS) * MILLIS_IN_DAY;
+    }
+
+    public static Binary toBinary(int julianDay, long timeOfDayNanos)
+    {
+        ByteBuffer buf = ByteBuffer.allocate(12);
+        buf.order(ByteOrder.LITTLE_ENDIAN);
+        buf.putLong(timeOfDayNanos);
+        buf.putInt(julianDay);
+        buf.flip();
+        return Binary.fromByteBuffer(buf);
     }
 }
