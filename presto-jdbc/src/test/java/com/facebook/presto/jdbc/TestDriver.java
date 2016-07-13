@@ -15,6 +15,7 @@ package com.facebook.presto.jdbc;
 
 import com.facebook.presto.plugin.blackhole.BlackHolePlugin;
 import com.facebook.presto.server.testing.TestingPrestoServer;
+import com.facebook.presto.spi.type.TimeZoneKey;
 import com.facebook.presto.tpch.TpchMetadata;
 import com.facebook.presto.tpch.TpchPlugin;
 import com.google.common.collect.ImmutableList;
@@ -43,6 +44,7 @@ import java.util.ArrayList;
 import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Set;
+import java.util.TimeZone;
 
 import static io.airlift.testing.Assertions.assertInstanceOf;
 import static java.lang.String.format;
@@ -1061,6 +1063,28 @@ public class TestDriver
             try (Statement statement = connection.createStatement()) {
                 assertTrue(statement.execute("SELECT 123 x, 'foo' y"));
                 statement.getMoreResults(Statement.KEEP_CURRENT_RESULT);
+            }
+        }
+    }
+
+    @Test
+    public void testSetTimeZoneId()
+            throws Exception
+    {
+        TimeZoneKey defaultZone = TimeZoneKey.getTimeZoneKey(TimeZone.getDefault().getID());
+
+        try (Connection connection = createConnection()) {
+            try (Statement statement = connection.createStatement();
+                    ResultSet rs = statement.executeQuery("SELECT current_timezone() zone")) {
+                assertTrue(rs.next());
+                assertEquals(rs.getString("zone"), defaultZone.getId());
+            }
+
+            connection.unwrap(PrestoConnection.class).setTimeZoneId("UTC");
+            try (Statement statement = connection.createStatement();
+                    ResultSet rs = statement.executeQuery("SELECT current_timezone() zone")) {
+                assertTrue(rs.next());
+                assertEquals(rs.getString("zone"), "UTC");
             }
         }
     }
